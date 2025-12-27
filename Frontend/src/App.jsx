@@ -1,12 +1,14 @@
 import { useState } from 'react'
+import UserRegistration from './UserRegistration'
+
 
 function App() {
 
 
   return (
-    <div>
-      <h1>Hello World</h1>
-    </div>
+    <>
+      <UserRegistration></UserRegistration>
+    </>
   )
 }
 
