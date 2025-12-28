@@ -26,7 +26,7 @@ function MyProfile () {
                     </div>
 
                     <div className="department">
-                        <img src={subject} />
+                        <img className="profile-icon" src={subject} />
                         <span>Software Engineering</span>
                     </div>
                </div>
@@ -36,7 +36,7 @@ function MyProfile () {
                <div className="user-metrics">
 
                     <div className="icon">
-                        <img src={upload}/>
+                        <img className="profile-icon" src={upload}/>
                     </div>
 
                     <div className="metrics-info">
@@ -52,7 +52,7 @@ function MyProfile () {
                <div className="user-metrics">
 
                     <div className="icon">
-                        <img src={upvote}/>
+                        <img className="profile-icon" src={upvote}/>
                     </div>
 
                     <div className="metrics-info">
@@ -69,7 +69,7 @@ function MyProfile () {
                <div className="user-metrics">
 
                     <div className="icon">
-                        <img src={people}/>
+                        <img className="profile-icon" src={people}/>
                     </div>
 
                     <div className="metrics-info">
@@ -86,7 +86,7 @@ function MyProfile () {
                <div className="user-metrics">
 
                     <div className="icon">
-                        <img src={people}/>
+                        <img className="profile-icon" src={people}/>
                     </div>
 
                     <div className="metrics-info">

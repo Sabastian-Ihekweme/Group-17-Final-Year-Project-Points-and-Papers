@@ -1,4 +1,15 @@
 
+body, html {
+    margin: 0;
+    padding: 0
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box; /* Optional but recommended for consistent box model behavior */
+}
+
 .header-logo {
   width: 32px; 
   height: 32px; 
@@ -13,13 +24,17 @@
 }
 
 .header {
+   margin-top: 0;
    display: flex;
    position: absolute;
    left: 30px;
-   margin-top: 15px;
    display: flex;
    align-items: center;
    gap: 20px;
+   position: fixed;
+   background-color: white;
+   z-index: 1;
+   height: 80px;
 }
 
 .logo-and-title {
