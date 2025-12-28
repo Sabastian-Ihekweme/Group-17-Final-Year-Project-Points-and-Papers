@@ -24,8 +24,8 @@ function SidePane() {
   const menuItems = [
     { icon: Search, label: 'Search Resources', color: 'blue', nav: '/search-resources' },
     { icon: Upload, label: 'Upload Resource', color: 'gray', nav: '/upload-resource'},
-    { icon: User, label: 'Profile', color: 'gray', nav: '/profile'},
-    { icon: FileText, label: 'My Contributions', color: 'gray', nav: '/profile'},
+    { icon: User, label: 'Profile', color: 'gray', nav: '/my-profile'},
+    { icon: FileText, label: 'My Contributions', color: 'gray', nav: '/my-contributors'},
     { icon: Users, label: 'Followers', color: 'gray', nav: '/followers'},
     { icon: Bell, label: 'Notifications', color: 'gray', nav: '/notifications'}
   ];
