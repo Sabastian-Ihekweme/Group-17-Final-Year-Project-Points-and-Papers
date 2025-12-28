@@ -1,6 +1,7 @@
 import './styles/UserRegistration.css';
 import logo from './assets/icons/logo.png';
 import landingPageDesign from './assets/landing-page-design.png'
+import { NavLink } from 'react-router';
 
 function UserRegistration () {
 
@@ -64,9 +65,9 @@ function UserRegistration () {
                 </div>
 
                 
-                <button type="submit" class="register-btn">Register</button>
+                <button type="submit" className="register-btn">Register</button>
 
-                <p class="login-link">Already have an account? <a href='#'>Login</a></p>
+                <p class="login-link">Already have an account? <NavLink to='/user-login'>Login</NavLink></p>
             </form>           
 
         </div>

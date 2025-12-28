@@ -1,9 +1,11 @@
 .user-registration {
     display: flex;
-    height: 784px;
-    width: 98%;
+    height: 100%;
+    width: 100%;
     text-align: center;
-    margin-left: 37px;
+    align-items: center;
+    margin-top: 30px;
+    gap: 100px;
 }
 
 .registration-container {
@@ -48,6 +50,9 @@ p {
 
 form {
     width: 90%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
 }
 
 .textbox {
@@ -119,7 +124,7 @@ form {
   border: none; 
   border-radius: 6px;
   margin-top: 40px;
-  margin-left: 80px;
+  margin-left: 63px;
 }
 
 .register-btn:hover {
@@ -160,8 +165,29 @@ form {
         gap: 30px;
     }
 
+    .logo-title {
+      margin-left: 60px;
+    }
+
     .registration-container {
-        margin-left: 330px;
+        margin-left: 300px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center; 
+    }
+
+    form {
+      display: flex;
+      flex-direction: column;
+      justify-content: left;
+    }
+
+    .textbox select {
+      width: 400px;
+    }
+
+    .register-btn {
+      margin-left: 120px;
     }
 
     .landing-page-design {

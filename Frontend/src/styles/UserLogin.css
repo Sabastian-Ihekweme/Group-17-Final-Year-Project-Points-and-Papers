@@ -1,0 +1,13 @@
+body {
+ display: flex;
+ flex-direction: column;
+}
+
+.user-login {
+}
+
+.login-container {
+    height: 100%;
+    align-items: center;
+    margin-top: 200px;
+}
