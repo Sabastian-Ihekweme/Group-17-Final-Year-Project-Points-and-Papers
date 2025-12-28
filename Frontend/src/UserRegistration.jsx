@@ -5,7 +5,7 @@ import landingPageDesign from './assets/landing-page-design.png'
 function UserRegistration () {
 
     return (
-    <>
+    <div className="user-registration">
         <div className="registration-container">
 
             <div className="logo-title">
@@ -18,10 +18,14 @@ function UserRegistration () {
             <p>Unlock a world of academic resources and AI tools.</p>
 
             <form>
-                <label for="username">Username</label>
+                <div className="textbox">
+                <label className="label" for="username">Username</label>
                 <input type="text" id="username" name="username" placeholder="Choose a unique username"/>
+                </div>
 
-                <label for="level">Level</label>
+
+                <div className="textbox">
+                <label className="label" for="level">Level</label>
                 <select id="level" name="level">
                     <option value="">Select your academic level</option>
                     <option value="100">100 Level</option>
@@ -29,8 +33,12 @@ function UserRegistration () {
                     <option value="300">300 Level</option>
                     <option value="400">400 Level</option>
                 </select>
+                </div>
 
-                <label for="department">Department</label>
+
+
+                <div className="textbox">
+                <label className="label" for="department">Department</label>
                 <select id="department" name="department">
                     <option value="">Select your department</option>
                     <option value="Computer Science">Computer Science</option>
@@ -40,13 +48,22 @@ function UserRegistration () {
                     <option value="Information Systems">Information Systems</option>
                     <option value="Software Engineering">Software Engineering</option>
                 </select>
+                </div>
 
-                <label for="email">Email</label>
+   
+
+                <div className="textbox">
+                <label className="label" for="email">Email</label>
                 <input type="email" id="email" name="email" placeholder="Enter your email address"/>
+                </div>
 
-                <label for="password">Password</label>
+
+                <div className="textbox">
+                <label className="label" for="password">Password</label>
                 <input type="password" id="password" name="password" placeholder="Create a strong password"/>
+                </div>
 
+                
                 <button type="submit" class="register-btn">Register</button>
 
                 <p class="login-link">Already have an account? <a href='#'>Login</a></p>
@@ -54,8 +71,8 @@ function UserRegistration () {
 
         </div>
 
-        <img src={landingPageDesign}/>
-    </>
+        <img className="landing-page-design" src={landingPageDesign}/>
+    </div>
     )
 }
 
