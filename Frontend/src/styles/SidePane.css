@@ -1,0 +1,144 @@
+
+        .container {
+          min-height: 100vh;
+          background-color: #f3f4f6;
+        }
+
+        .hamburger-btn {
+          position: fixed;
+          top: 1rem;
+          left: 1rem;
+          z-index: 50;
+          padding: 0.5rem;
+          background: white;
+          border: none;
+          cursor: pointer;
+          transition: background-color 0.2s;
+        }
+
+        .hamburger-btn:hover {
+          background-color: #f9fafb;
+        }
+
+        .overlay {
+          position: fixed;
+          inset: 0;
+          background-color: rgba(0, 0, 0, 0.5);
+          z-index: 30;
+          transition: opacity 0.3s;
+        }
+
+        .side-pane {
+          position: fixed;
+          top: 0;
+          left: 0;
+          height: 100%;
+          width: 320px;
+          background: white;
+          box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+          z-index: 40;
+          transform: translateX(-100%);
+          transition: transform 0.3s ease-in-out;
+        }
+
+        .side-pane.open {
+          transform: translateX(0);
+        }
+
+        .menu-container {
+          padding-top: 5rem;
+          padding-left: 1.5rem;
+          padding-right: 1.5rem;
+        }
+
+        .menu-item {
+          width: 100%;
+          display: flex;
+          align-items: center;
+          gap: 1rem;
+          padding: 1rem;
+          background: none;
+          border: none;
+          border-radius: 0.5rem;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+
+        .menu-item:hover {
+          background-color: #f9fafb;
+        }
+
+        .menu-icon {
+          width: 24px;
+          height: 24px;
+          transition: transform 0.2s;
+        }
+
+        .menu-item:hover .menu-icon {
+          transform: scale(1.1);
+        }
+
+        .menu-icon.blue {
+          color: #3b82f6;
+        }
+
+        .menu-icon.gray {
+          color: #374151;
+        }
+
+        .menu-label {
+            font-family: Open Sans; /* Body */
+            font-size: 16px; 
+            line-height: 20px; 
+            font-weight: 500; 
+            color: #1A1A1AFF; 
+        }
+
+        .main-content {
+          padding: 2rem;
+          margin-left: 4rem;
+        }
+
+        .title {
+          font-size: 1.875rem;
+          font-weight: bold;
+          color: #1f2937;
+          margin-bottom: 1rem;
+        }
+
+        .description {
+          color: #4b5563;
+        }
+
+
+
+        @media (min-width: 764px) {
+
+            .side-pane {
+                position: fixed;
+                top: 0;
+                left: 0;
+                height: 100%;
+                width: 320px;
+                background: white;
+                z-index: 0;
+                transform: translateX(-100%);
+                transition: transform 0.3s ease-in-out;
+                box-shadow: none;
+                border-right: 1.5px solid rgba(202, 200, 200, 0.39); 
+            }
+
+            .menu-container {
+                padding-top: 5rem;
+                padding-left: 1.5rem;
+                padding-right: 1.5rem;
+            }
+
+            .menu-item {
+                padding: 0.7rem;
+                cursor: pointer;
+                font-size: 14px;
+            }
+
+        }
+    
