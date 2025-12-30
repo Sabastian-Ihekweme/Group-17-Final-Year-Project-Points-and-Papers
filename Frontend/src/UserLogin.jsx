@@ -33,7 +33,7 @@ function UserLogin() {
                             </div>
             
                             
-                            <button type="submit" className="register-btn">Login</button>
+                            <button type="submit" className="login-btn">Login</button>
             
                             <p class="login-link">Don't have an account? <NavLink to='/user-registration'>Create one</NavLink></p>
                         </form>           

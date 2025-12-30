@@ -67,7 +67,7 @@ function UserRegistration () {
                 
                 <button type="submit" className="register-btn">Register</button>
 
-                <p class="login-link">Already have an account? <NavLink to='/user-login'>Login</NavLink></p>
+                <p className="login-link">Already have an account? <NavLink to='/user-login'>Login</NavLink></p>
             </form>           
 
         </div>

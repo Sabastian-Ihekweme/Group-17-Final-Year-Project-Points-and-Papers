@@ -4,10 +4,45 @@ body {
 }
 
 .user-login {
+    display: flex;
+    height: 100%;
+    flex-direction: column;
+    justify-content: center;
 }
 
 .login-container {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
     height: 100%;
     align-items: center;
-    margin-top: 200px;
+}
+
+.login-btn {
+  width: 187px; 
+  height: 40px; 
+  padding: 0 12px; 
+  display: flex; 
+  align-items: center; 
+  justify-content: center; 
+  font-family: Open Sans; 
+  font-size: 14px; 
+  line-height: 22px; 
+  font-weight: 500; 
+  color: #FFFFFFFF; /* white */
+  background: #1F9EF9FF; 
+  opacity: 1; 
+  border: none; 
+  border-radius: 6px; 
+  margin-top: 30px;
+}
+
+.login-btn:hover {
+  color: #FFFFFFFF; /* white */
+  background: #0568B0FF;
+}
+
+.login-btn:hover:active {
+  color: #FFFFFFFF; /* white */
+  background: #035088FF;
 }
