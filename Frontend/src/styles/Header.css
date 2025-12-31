@@ -11,13 +11,13 @@ body, html {
 }
 
 .header-logo {
-  width: 32px; 
-  height: 32px; 
+  width: 30px; 
+  height: 30px; 
 }
 
 .header-title {
   font-family: Montserrat; /* Heading */
-  font-size: 18px; 
+  font-size: 15px; 
   line-height: 20px; 
   font-weight: 700; 
   color: #1F9EF9FF; 
@@ -27,7 +27,7 @@ body, html {
    margin-top: 0;
    display: flex;
    position: absolute;
-   left: 30px;
+   right: 1px;
    display: flex;
    align-items: center;
    gap: 20px;
@@ -35,10 +35,13 @@ body, html {
    background-color: white;
    z-index: 1;
    height: 80px;
+   border-bottom: 1.5px solid rgba(202, 200, 200, 0.39); 
+   width: 100%;
+   margin-right: 0;
 }
 
 .logo-and-title {
-    margin-left: 30px;
+    margin-left: 60px;
     display: flex;
     align-items: center;
     width: 75%;
@@ -46,10 +49,11 @@ body, html {
 }
 
 .points-and-profile {
+    margin-left: 0px;
     display: flex;
     align-items: center;
     justify-content: right;
-    width: 250px;
+    width: 270px;
     gap: 10px;
 }
 
@@ -98,5 +102,28 @@ hr {
     .points-and-profile {
 
     }
+
+    .logo-and-title {
+    margin-left: 60px;
+    display: flex;
+    align-items: center;
+    width: 75%;
+    gap: 10px;
+    }
+
+    .header-logo {
+    width: 32px; 
+    height: 32px; 
+    }
+
+    .header-title {
+    font-family: Montserrat; /* Heading */
+    font-size: 24px; 
+    line-height: 20px; 
+    font-weight: 700; 
+    color: #1F9EF9FF; 
+    }
+
+
 
 }

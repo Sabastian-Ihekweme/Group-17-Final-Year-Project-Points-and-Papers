@@ -6,6 +6,7 @@ import Header from './Header'
 import MyProfile from './MyProfile'
 import ResourceUpload from "./ResourceUpload";
 import SearchResources from "./SearchResources";
+import ResourceDetailsLocked from "./ResourceDetailsLocked";
 
 function MyRoutes () {
 
@@ -21,7 +22,8 @@ function MyRoutes () {
                 <Route path="/my-profile" element={<MyProfile/>} />
                 <Route path="/upload-resource" element={<ResourceUpload />} />
                 <Route path="/search-resources" element={<SearchResources />} />
-            </Routes>
+                <Route path="/resource-details-locked" element={<ResourceDetailsLocked/>} />
+            </Routes>x
         </>
     )
 }

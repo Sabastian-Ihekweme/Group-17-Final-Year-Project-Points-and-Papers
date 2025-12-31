@@ -19,7 +19,6 @@ function Header() {
             <div className="profile-picture">1</div>
             </div>
         </div>
-        <hr/>
         </>
     )
 }

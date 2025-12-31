@@ -2,7 +2,7 @@
 .resource-search {
     display: flex;
     flex-direction: column;
-    margin-top: 90px;
+    margin-top: 150px;
     width: 100%;
 }
 
@@ -110,6 +110,8 @@
 }
 
 .result-resource {
+  transform: translateX(0);
+  transition: transform 0.3s ease;
   cursor: pointer;
   margin-top: 16px;
   width: 246px; 
@@ -122,6 +124,7 @@
 
 .result-resource:hover {
     background: rgba(205, 202, 202, 0.104);
+    transform: translateY(-5px);
     transition: 0.1s;
 }
 
