@@ -184,7 +184,7 @@
     justify-content: center;
 }
 
-.department, .level, .instructor {
+.department, .level, .result-resource .instructor {
   width: 190px; 
   font-family: Open Sans; /* Body */
   font-size: 14px; 
@@ -204,6 +204,7 @@
   line-height: 20px; 
   font-weight: 400; 
   color: #1F9EF9FF; 
+  padding-bottom: 20px;
 }
 
 .result-info .unlocked {

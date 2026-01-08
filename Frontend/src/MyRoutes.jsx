@@ -7,6 +7,8 @@ import MyProfile from './MyProfile'
 import ResourceUpload from "./ResourceUpload";
 import SearchResources from "./SearchResources";
 import ResourceDetailsLocked from "./ResourceDetailsLocked";
+import ResourceDetailsImage from "./ResourceDetailsImage";
+import ResourceDetailsPDF from "./ResourceDetailsPDF";
 
 function MyRoutes () {
 
@@ -23,6 +25,8 @@ function MyRoutes () {
                 <Route path="/upload-resource" element={<ResourceUpload />} />
                 <Route path="/search-resources" element={<SearchResources />} />
                 <Route path="/resource-details-locked" element={<ResourceDetailsLocked/>} />
+                <Route path="/resource-details-image" element ={<ResourceDetailsImage />} />
+                <Route path="/resource-details-pdf" element ={<ResourceDetailsPDF />} />
             </Routes>x
         </>
     )

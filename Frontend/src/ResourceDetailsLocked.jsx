@@ -9,11 +9,11 @@ function ResourceDetailsLocked () {
 
             <Header />
 
-            <div className="resource-details-locked">
+            <div className="resource-details-locked-container">
 
                 <h1>Resource Details (Locked)</h1>
 
-                <div className="resource-details">
+                <div className="resource-detailsl-locked">
 
                     <h2>SEN 317 Midterm Exam</h2>
 
