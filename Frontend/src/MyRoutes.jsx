@@ -9,6 +9,7 @@ import SearchResources from "./SearchResources";
 import ResourceDetailsLocked from "./ResourceDetailsLocked";
 import ResourceDetailsImage from "./ResourceDetailsImage";
 import ResourceDetailsPDF from "./ResourceDetailsPDF";
+import AIAnswer from "./AIAnswer";
 
 function MyRoutes () {
 
@@ -27,7 +28,8 @@ function MyRoutes () {
                 <Route path="/resource-details-locked" element={<ResourceDetailsLocked/>} />
                 <Route path="/resource-details-image" element ={<ResourceDetailsImage />} />
                 <Route path="/resource-details-pdf" element ={<ResourceDetailsPDF />} />
-            </Routes>x
+                <Route path="/generate-ai-answer" element ={<AIAnswer />} />
+            </Routes>
         </>
     )
 }

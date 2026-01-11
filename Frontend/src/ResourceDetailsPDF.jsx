@@ -6,62 +6,13 @@ import { Document, Page, pdfjs } from "react-pdf";
 import resource from "/resources/Screenshot 2025-12-29 at 14.57.13.png";
 import downArrow from "./assets/icons/down-arrow.png"
 import upArrow from "./assets/icons/up-arrow.png"
+import pdf from "/resources/Student-Transcript-(1).pdf"
 
 
 
 function ResourceDetailsPDF() {
      
-    const resources = [
-        resource,
-        resource,
-        resource,
-        resource,
-        resource
-    ]
-
-     const [currentIndex, setCurrentIndex] = useState(0);
-
-  const goToPrevious = () => {
-    setCurrentIndex((prevIndex) => 
-      prevIndex === 0 ? resources.length - 1 : prevIndex - 1
-    );
-  };
-
-  const goToNext = () => {
-    setCurrentIndex((prevIndex) => 
-      prevIndex === resources.length - 1 ? 0 : prevIndex + 1
-    );
-  };
-
-    const downloadImagesAsZip = async () => {
-    try {
-      // Dynamically import JSZip
-      const JSZip = (await import('https://cdn.jsdelivr.net/npm/jszip@3.10.1/+esm')).default;
-      const zip = new JSZip();
-
-      // Fetch all images and add to zip
-      for (let i = 0; i < resources.length; i++) {
-        const response = await fetch(resources[i]);
-        const blob = await response.blob();
-        zip.file(`image-${i + 1}.jpg`, blob);
-      }
-
-      // Generate zip file and trigger download
-      const content = await zip.generateAsync({ type: 'blob' });
-      const url = URL.createObjectURL(content);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = 'resources.zip';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-    } catch (error) {
-      console.error('Error downloading resources:', error);
-      alert('Failed to download resources. Please try again.');
-    }
-  };
-
+const pdfDocument = pdf;
 
 const [comments, setComments] = useState([
     {
@@ -346,6 +297,13 @@ const [comments, setComments] = useState([
     );
   };
 
+  const downloadPdf = () => {
+    const link = document.createElement('a');
+    link.href = {pdfDocument};
+    link.download = 'resources.pdf';
+    link.click();
+  };
+
     return (
         <>
 
@@ -370,53 +328,17 @@ const [comments, setComments] = useState([
                     <p className="description">Comprehensive notes covering perturbation theory, scattering theory, and relativistic quantum mechanics. Suitable for graduate-level students.</p>
                     </div>
 
-                        <div className="carousel-wrapper">
-                        <div className="image-frame">
-                            <img
-                            src={resources[currentIndex]}
-                            alt={`Slide ${currentIndex + 1}`}
-                            className="carousel-image"
-                            />
-                            
-                            <div className="image-counter">
-                            {currentIndex + 1} / {resources.length}
-                            </div>
-                        </div>
-
-                        <button
-                            onClick={goToPrevious}
-                            className="nav-button nav-button-left"
-                        >
-                            <ChevronLeft style={{ width: '1.5rem', height: '1.5rem' }} />
-                        </button>
-
-                        <button
-                            onClick={goToNext}
-                            className="nav-button nav-button-right"
-                        >
-                            <ChevronRight style={{ width: '1.5rem', height: '1.5rem' }} />
-                        </button>
-
-                        <div className="dot-indicators">
-                            {resources.map((_, index) => (
-                            <button
-                                key={index}
-                                onClick={() => setCurrentIndex(index)}
-                                className={`dot ${index === currentIndex ? 'active' : ''}`}
-                            />
-                            ))}
-                        </div>
-                        </div>
-
+                    <div className="pdf-link">
+                      <a href={pdfDocument} target="null">Click to open PDF</a>
+                    </div>
                         
                     </div>
 
                     <div className="download-buttons">
-                        <button className="view-resource">
-                            View Resource
-                        </button>
 
-                        <button onClick={downloadImagesAsZip} className="download-resource">
+                        <button 
+                        onClick={downloadPdf}
+                        className="download-resource">
                             Download
                         </button>
                     </div>
