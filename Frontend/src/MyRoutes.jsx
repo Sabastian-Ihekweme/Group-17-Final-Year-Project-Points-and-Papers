@@ -10,6 +10,7 @@ import ResourceDetailsLocked from "./ResourceDetailsLocked";
 import ResourceDetailsImage from "./ResourceDetailsImage";
 import ResourceDetailsPDF from "./ResourceDetailsPDF";
 import AIAnswer from "./AIAnswer";
+import AINotes from "./AINotes";
 
 function MyRoutes () {
 
@@ -29,6 +30,7 @@ function MyRoutes () {
                 <Route path="/resource-details-image" element ={<ResourceDetailsImage />} />
                 <Route path="/resource-details-pdf" element ={<ResourceDetailsPDF />} />
                 <Route path="/generate-ai-answer" element ={<AIAnswer />} />
+                <Route path="/generate-ai-notes" element ={<AINotes />} />
             </Routes>
         </>
     )

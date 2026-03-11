@@ -18,7 +18,7 @@ function MyProfile () {
                <div className="user-info">
                     <div className="profile-picture"></div>
 
-                    <div className="username">Sabastian Ihekweme</div>
+                    <div className="username">Ehijele Solomon</div>
                     
                     <div className="level">
                         <img src={school} />
