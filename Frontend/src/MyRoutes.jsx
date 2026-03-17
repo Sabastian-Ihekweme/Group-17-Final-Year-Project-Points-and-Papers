@@ -12,6 +12,7 @@ import ResourceDetailsPDF from "./ResourceDetailsPDF";
 import AIAnswer from "./AIAnswer";
 import AINotes from "./AINotes";
 import MyContributions from "./MyContributions";
+import Followers from "./Followers";
 
 function MyRoutes () {
 
@@ -33,6 +34,7 @@ function MyRoutes () {
                 <Route path="/generate-ai-answer" element ={<AIAnswer />} />
                 <Route path="/generate-ai-notes" element ={<AINotes />} />
                 <Route path="/my-contributions" element ={<MyContributions />} />
+                <Route path="/followers" element ={<Followers />} />
             </Routes>
         </>
     )
