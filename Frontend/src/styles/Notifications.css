@@ -1,0 +1,140 @@
+.notifications-div {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.notifications-div h1 {
+  font-family: Montserrat; /* Heading */
+  font-size: 24px; 
+  line-height: 32px; 
+  font-weight: 700; 
+  color: #1A1A1AFF; 
+  margin-top: 100px;
+  margin-bottom: 25px;
+}
+
+.notification-container {
+  width: 352px; 
+  min-height: 140px; 
+  background: #FFFFFFFF; /* white */
+  border-radius: 8px; 
+  box-shadow: 0px 0px 1px #171a1f14, 0px 0px 2px #171a1f14; /* shadow-xs */
+  display: flex;
+  margin-bottom: 16px;
+}
+
+.notification-icon {
+    width: 2px;
+}
+
+.notification-type-icon {
+  width: 20px; 
+  height: 20px; 
+  fill: #1F9EF9FF;
+  padding-top: 20px;
+  margin-left: 10px;
+}
+
+.notification-details {
+    margin-left: 52px;
+    display: flex;
+    flex-direction: column;
+    gap: 1;
+    margin-right: 10px;
+}
+
+.notification-type {
+  font-family: Montserrat; /* Heading */
+  font-size: 18px; 
+  line-height: 28px; 
+  font-weight: 600; 
+  color: #1A1A1AFF;
+  margin-top: 19px;
+}
+
+.notification-info {
+  font-family: Open Sans; /* Body */
+  font-size: 14px; 
+  line-height: 20px; 
+  font-weight: 400; 
+  color: #5F5F5FFF; 
+}
+
+.notification-time {
+    width: 60px;
+    padding-bottom: 10px;
+}
+
+.notification-meta-data {
+    margin-top: 18px;
+    display: flex;
+    gap: 84px;
+    margin-bottom: 22px;
+}
+
+.view-notification-button {
+  min-width: 110px; 
+  max-width: auto;
+  max-height: 32px; 
+  padding: 0 12px; 
+  display: flex; 
+  align-items: center; 
+  justify-content: center; 
+  font-family: Open Sans; 
+  font-size: 14px; 
+  line-height: 22px; 
+  font-weight: 500; 
+  color: #5F5F5FFF; 
+  background: #FFFFFFFF; /* white */
+  opacity: 1; 
+  border-radius: 6px; 
+  border-width: 1px; 
+  border-color: #E1E1E1FF; 
+  border-style: solid;
+}
+
+.view-notification-button:hover {
+      color: #5F5F5FFF; 
+  background: #FFFFFFFF; /* white */
+}
+
+.view-notification-button:active {
+  color: #5F5F5FFF; 
+  background: #FFFFFFFF; /* white */
+  outline: none;
+}
+
+
+@media (min-width: 764px) {
+    
+    .notifications-div {
+          width: 1184px; 
+          height: 836px;
+          margin-left: 290px;
+          display: flex;
+          flex-direction: column;
+          text-align: left; 
+          align-items: left;
+    }
+
+    .notification-container {
+        width: 1056px; 
+        height: 128px; 
+        background: #FFFFFFFF; /* white */
+        border-radius: 8px; 
+        box-shadow: 0px 0px 1px #171a1f14, 0px 0px 2px #171a1f14; /* shadow-xs */
+    }
+
+    .notification-time {
+        width: auto;
+    }
+
+    .notification-meta-data {
+        gap: 805px;
+    }
+
+}
+
