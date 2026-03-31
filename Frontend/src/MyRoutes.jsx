@@ -13,6 +13,8 @@ import AIAnswer from "./AIAnswer";
 import AINotes from "./AINotes";
 import MyContributions from "./MyContributions";
 import Followers from "./Followers";
+import Notifications from "./Notifications"
+
 
 function MyRoutes () {
 
@@ -35,6 +37,7 @@ function MyRoutes () {
                 <Route path="/generate-ai-notes" element ={<AINotes />} />
                 <Route path="/my-contributions" element ={<MyContributions />} />
                 <Route path="/followers" element ={<Followers />} />
+                <Route path="/notifications" element ={<Notifications />} />
             </Routes>
         </>
     )
