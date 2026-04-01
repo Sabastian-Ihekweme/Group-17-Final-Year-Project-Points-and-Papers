@@ -25,6 +25,11 @@
 .user-registration p {
   margin-top: 10px;
   margin-bottom: 30px;
+  color: black;
+}
+
+.user-registration input {
+  color: black;
 }
 
 
@@ -55,7 +60,7 @@ h2 {
   color: #1A1A1AFF;
 }
 
-p {
+.user-registration p {
   font-family: Open Sans; /* Body */
   font-size: 14px; 
   line-height: 20px; 

@@ -1,8 +1,47 @@
+import {useState, useEffect} from "react";
 import logo from './assets/icons/logo.png';
 import './styles/Header.css'
 import SidePane from './SidePane';
+import supabase from './config/supabaseClient';
+import { useNavigate } from 'react-router-dom';
+import { UserAuth } from "./context/AuthContext";
 
 function Header() {
+
+    const {session, signOut} = UserAuth();
+    const navigate = useNavigate();
+
+    const [profile, setProfile] = useState(null)
+
+    useEffect(() => {
+        const getProfile = async () => {
+            const { data: { session } } = await supabase.auth.getSession()
+
+            const { data } = await supabase
+                .from('profiles')
+                .select('*')
+                .eq('id', session.user.id)
+                .single()
+
+            setProfile(data)
+        }
+
+        getProfile()
+    }, [])
+
+    console.log(session);
+
+    const handleSignOut = async (e) => {
+        e.preventDefault()
+
+        try {
+            await signOut()
+            navigate('/user-login')
+        } catch (err) {
+            console.error(err);
+        }
+    }
+
     return (
         <>
 
@@ -15,8 +54,10 @@ function Header() {
             </div>
 
             <div className="points-and-profile">
-            <p className="points">Points: <span>1200</span></p>
-            <div className="profile-picture">1</div>
+            <p className="points">Points: <span>{profile?.points}</span></p>
+            <p 
+            onClick={handleSignOut}
+            className="sign-out">Sign Out</p>
             </div>
         </div>
         </>

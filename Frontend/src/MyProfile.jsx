@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import Header from './Header';
 import school from './assets/icons/school.png'
 import subject from './assets/icons/subject.png'
@@ -5,29 +6,54 @@ import upload from './assets/icons/upload.png'
 import upvote from './assets/icons/like.png'
 import people from './assets/icons/people.png'
 import './styles/MyProfile.css'
+import { UserAuth } from './context/AuthContext';
+import { useNavigate } from 'react-router-dom';
+import supabase from './config/supabaseClient';
 
 function MyProfile () {
+
+    const {session, signOut} = UserAuth();
+    const navigate = useNavigate();
+
+    const [profile, setProfile] = useState(null)
+
+    useEffect(() => {
+        const getProfile = async () => {
+            const { data: { session } } = await supabase.auth.getSession()
+
+            const { data } = await supabase
+                .from('profiles')
+                .select('*')
+                .eq('id', session.user.id)
+                .single()
+
+            setProfile(data)
+        }
+
+        getProfile()
+    }, [])
+
+    console.log(session);
+
     return (
         <>
             <Header/>
 
-            <div className="page-title"><h1>User Profile</h1></div>
+            <div className="page-title"><h1>Welcome</h1></div>
             
             <div className="my-profile-container">
 
                <div className="user-info">
                     <div className="profile-picture"></div>
 
-                    <div className="username">Ehijele Solomon</div>
+                    <div className="username">{profile?.username}</div>
                     
                     <div className="level">
-                        <img src={school} />
-                        <span>400L</span>
+                        {profile?.level}L
                     </div>
 
                     <div className="department">
-                        <img className="profile-icon" src={subject} />
-                        <span>Software Engineering</span>
+                        <span>{profile?.department}</span>
                     </div>
                </div>
 
@@ -99,6 +125,7 @@ function MyProfile () {
                </div>
 
             </div>
+        
         </>
     )
 }

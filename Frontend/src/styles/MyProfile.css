@@ -25,6 +25,8 @@
   display: flex;
   flex-direction: column;
   align-items: center;
+  text-align: center;
+  gap: 10px;
 }
 
 .user-info .profile-picture {
@@ -46,7 +48,6 @@
   font-weight: 700; 
   color: #1A1A1AFF;
   text-align: center;
-  margin-top: 10px;
 }
 
 .user-info .level {
@@ -61,13 +62,14 @@
   border-width: 1px; 
   border-color: #00000000; 
   border-style: solid;
-  margin-top: 20px;
   font-family: Open Sans; 
   font-size: 12px; 
   line-height: 16px; 
   font-weight: 600; 
-  color: #FFFFFFFF;
+  color: white;
 }
+
+
 
 .user-info img {
   width: 14px; 

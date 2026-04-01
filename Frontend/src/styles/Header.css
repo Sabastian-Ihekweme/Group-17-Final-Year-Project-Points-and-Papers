@@ -57,7 +57,17 @@ body, html {
     gap: 10px;
 }
 
+
+
 .points {
+    color: black;
+    font-weight: bold;
+}
+
+.sign-out {
+    margin-left: 20px;
+    color: rgb(85, 17, 17);
+    cursor: pointer;
 }
 
 
