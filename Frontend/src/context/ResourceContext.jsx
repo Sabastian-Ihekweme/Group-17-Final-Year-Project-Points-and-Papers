@@ -89,7 +89,6 @@ export const ResourceContextProvider = ({ children }) => {
             }
 
             if (filters.level) {
-                // Extract level from course code
                 const levelNum = parseInt(filters.level);
                 query = query.gte('course_code', `${levelNum}`).lt('course_code', `${levelNum + 100}`);
             }
@@ -107,14 +106,12 @@ export const ResourceContextProvider = ({ children }) => {
     // Unlock a resource
     const unlockResource = async (resourceId, resourceType) => {
         try {
-            // Check if user has enough points
             const pointsCost = pointsMap[resourceType] || 3;
 
             if (userPoints < pointsCost) {
                 return { success: false, error: `Not enough points. You need ${pointsCost} points but have ${userPoints}` };
             }
 
-            // 1. Insert into unlocked_resources table
             const { error: unlockError } = await supabase
                 .from('unlocked_resources')
                 .insert({
@@ -125,7 +122,6 @@ export const ResourceContextProvider = ({ children }) => {
 
             if (unlockError) throw unlockError;
 
-            // 2. Deduct points from user's profile
             const { error: pointsError } = await supabase
                 .from('profiles')
                 .update({ points: userPoints - pointsCost })
@@ -133,7 +129,6 @@ export const ResourceContextProvider = ({ children }) => {
 
             if (pointsError) throw pointsError;
 
-            // 3. Update local state
             setUnlockedResources(prev => [...prev, resourceId]);
             setPoints(userPoints - pointsCost);
 
@@ -222,7 +217,6 @@ export const ResourceContextProvider = ({ children }) => {
     // Upvote an answer
     const upvoteAnswer = async (answerId) => {
         try {
-            // Check if already upvoted
             const { data: existingVote, error: checkError } = await supabase
                 .from('upvotes')
                 .select('id')
@@ -235,7 +229,6 @@ export const ResourceContextProvider = ({ children }) => {
             }
 
             if (existingVote) {
-                // Already upvoted, remove upvote
                 const { error: deleteError } = await supabase
                     .from('upvotes')
                     .delete()
@@ -244,7 +237,6 @@ export const ResourceContextProvider = ({ children }) => {
                 if (deleteError) throw deleteError;
                 return { success: true, upvoted: false };
             } else {
-                // Add upvote
                 const { error: insertError } = await supabase
                     .from('upvotes')
                     .insert({
@@ -292,6 +284,62 @@ export const ResourceContextProvider = ({ children }) => {
         } catch (error) {
             console.error('Error deleting answer:', error);
             return { success: false, error: error.message };
+        }
+    };
+
+    // Follow a user
+    const followUser = async (userIdToFollow) => {
+        try {
+            const { error } = await supabase
+                .from('follows')
+                .insert({
+                    follower_id: session.user.id,
+                    following_id: userIdToFollow
+                });
+
+            if (error) throw error;
+            return { success: true };
+        } catch (error) {
+            console.error('Error following user:', error);
+            return { success: false, error: error.message };
+        }
+    };
+
+    // Unfollow a user
+    const unfollowUser = async (userIdToUnfollow) => {
+        try {
+            const { error } = await supabase
+                .from('follows')
+                .delete()
+                .eq('follower_id', session.user.id)
+                .eq('following_id', userIdToUnfollow);
+
+            if (error) throw error;
+            return { success: true };
+        } catch (error) {
+            console.error('Error unfollowing user:', error);
+            return { success: false, error: error.message };
+        }
+    };
+
+    // Check if following a user
+    const checkIfFollowing = async (userIdToCheck) => {
+        try {
+            const { data, error } = await supabase
+                .from('follows')
+                .select('id')
+                .eq('follower_id', session.user.id)
+                .eq('following_id', userIdToCheck)
+                .single();
+
+            if (error && error.code !== 'PGRST116') {
+                throw error;
+            }
+
+            return data ? true : false;
+        } catch (error) {
+            console.error('Error checking follow status:', error);
+            return false;
         }
     };
 
@@ -435,6 +483,9 @@ export const ResourceContextProvider = ({ children }) => {
         upvoteAnswer,
         deleteQuestion,
         deleteAnswer,
+        followUser,
+        unfollowUser,
+        checkIfFollowing,
         unlockedResources,
         loading
     };

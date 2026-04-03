@@ -144,6 +144,11 @@
   color: #1A1A1AFF; 
 }
 
+.my-profile-container {
+  display: flex;
+  flex-direction: column;
+}
+
 
 
 @media (min-width: 764px) {
@@ -164,6 +169,10 @@
         flex-direction: row;
         flex-wrap: wrap;
         gap: 10px;
+    }
+
+    .user-contributions {
+      margin-left: 300px;
     }
 
 

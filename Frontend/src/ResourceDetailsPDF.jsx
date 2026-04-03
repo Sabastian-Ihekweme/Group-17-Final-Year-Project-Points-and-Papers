@@ -330,7 +330,18 @@ function ResourceDetailsPDF() {
                     </div>
                     
                     <div className="resource-metadata">
-                    <p className="instructor">Uploaded by {resource.profiles?.username || 'Anonymous'}</p>
+                    
+
+                    <p className="instructor">
+                        Uploaded by{' '}
+                        <span 
+                            onClick={() => navigate(`/profile/${resource.user_id}`)}
+                            style={{ cursor: 'pointer', color: '#1F9EF9' }}
+                        >
+                            {resource.profiles?.username || 'Anonymous'}
+                        </span>
+                    </p>
+
                     <p className="description">{resource.description || 'No description provided'}</p>
                     </div>
 

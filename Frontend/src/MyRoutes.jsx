@@ -4,6 +4,7 @@ import UserRegistration from "./UserRegistration";
 import UserLogin from "./UserLogin"
 import Header from './Header'
 import MyProfile from './MyProfile'
+import UserProfile from './UserProfile';
 import ResourceUpload from "./ResourceUpload";
 import SearchResources from "./SearchResources";
 import ResourceDetailsLocked from "./ResourceDetailsLocked";
@@ -48,6 +49,7 @@ function MyRoutes() {
             {/* Dynamic resource detail routes with ID parameter */}
             <Route path="/resource-details-image/:id" element={<ProtectedRoute><ResourceDetailsImage /></ProtectedRoute>} />
             <Route path="/resource-details-pdf/:id" element={<ProtectedRoute><ResourceDetailsPDF /></ProtectedRoute>} />
+            <Route path="/profile/:userId" element={<ProtectedRoute><UserProfile /></ProtectedRoute>} />
             
             <Route path="/generate-ai-answer" element={<ProtectedRoute><AIAnswer /></ProtectedRoute>} />
             <Route path="/generate-ai-notes" element={<ProtectedRoute><AINotes /></ProtectedRoute>} />
