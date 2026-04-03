@@ -40,12 +40,15 @@ export const ResourceContextProvider = ({ children }) => {
         }
     };
 
-    // Fetch all resources
+    // Fetch all resources with uploader profile
     const fetchAllResources = async () => {
         try {
             const { data, error } = await supabase
                 .from('resources')
-                .select('*')
+                .select(`
+                    *,
+                    profiles(username)
+                `)
                 .order('created_at', { ascending: false });
 
             if (error) throw error;
@@ -61,7 +64,10 @@ export const ResourceContextProvider = ({ children }) => {
         try {
             let query = supabase
                 .from('resources')
-                .select('*');
+                .select(`
+                    *,
+                    profiles(username)
+                `);
 
             // Apply filters
             if (filters.searchQuery) {

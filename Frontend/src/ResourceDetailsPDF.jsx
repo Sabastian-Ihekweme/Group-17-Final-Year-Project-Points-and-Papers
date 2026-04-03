@@ -1,4 +1,4 @@
-import {useState, useRef, useEffect} from 'react';
+import {useState, useEffect} from 'react';
 import { ChevronLeft, ChevronRight, ChevronDown, MessageSquare, ThumbsUp, Reply, Trash2 } from 'lucide-react';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import Header from "./Header";
@@ -68,7 +68,6 @@ function ResourceDetailsPDF() {
         
         if (result.success) {
             setNewQuestion('');
-            // Refresh questions
             const data = await fetchQuestions(resource.id);
             setQuestions(data);
         } else {
@@ -86,7 +85,6 @@ function ResourceDetailsPDF() {
         if (result.success) {
             setNewAnswerTexts(prev => ({ ...prev, [questionId]: '' }));
             setReplyingTo(null);
-            // Refresh questions
             const data = await fetchQuestions(resource.id);
             setQuestions(data);
         } else {
@@ -108,7 +106,6 @@ function ResourceDetailsPDF() {
                     return newSet;
                 });
             }
-            // Refresh questions to get updated upvote counts
             const data = await fetchQuestions(resource.id);
             setQuestions(data);
         }
@@ -121,7 +118,6 @@ function ResourceDetailsPDF() {
         const result = await deleteQuestion(questionId);
         
         if (result.success) {
-            // Refresh questions
             const data = await fetchQuestions(resource.id);
             setQuestions(data);
         } else {
@@ -136,7 +132,6 @@ function ResourceDetailsPDF() {
         const result = await deleteAnswer(answerId);
         
         if (result.success) {
-            // Refresh questions
             const data = await fetchQuestions(resource.id);
             setQuestions(data);
         } else {
@@ -335,7 +330,7 @@ function ResourceDetailsPDF() {
                     </div>
                     
                     <div className="resource-metadata">
-                    <p className="instructor">By {resource.instructor}</p>
+                    <p className="instructor">Uploaded by {resource.profiles?.username || 'Anonymous'}</p>
                     <p className="description">{resource.description || 'No description provided'}</p>
                     </div>
 

@@ -394,7 +394,7 @@ function ResourceDetailsImage() {
                     </div>
                     
                     <div className="resource-metadata">
-                    <p className="instructor">By {resource.instructor}</p>
+                    <p className="instructor">Uploaded by {resource.profiles?.username || 'Anonymous'}</p>
                     <p className="description">{resource.description || 'No description provided'}</p>
                     </div>
 
