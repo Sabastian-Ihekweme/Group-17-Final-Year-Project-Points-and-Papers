@@ -1,4 +1,26 @@
+.points-popup {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    background-color: #4CAF50;
+    color: white;
+    padding: 16px 24px;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    animation: fadeIn 0.3s ease;
+    z-index: 1000;
+    text-align: center;
+}
 
+p, strong {
+    background-color: transparent !important;
+}
+
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
 
         .card {
           max-width: 600px;
@@ -176,6 +198,10 @@
             gap: 5px;
             margin-top: 10px;
             padding-right: 20px;
+        }
+
+        input {
+          color: black;
         }
 
         .resource-type input {

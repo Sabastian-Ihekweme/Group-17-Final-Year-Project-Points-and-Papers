@@ -12,15 +12,17 @@ import supabase from './config/supabaseClient';
 
 function MyProfile () {
 
-    const {session, signOut} = UserAuth();
+    const { session, signOut } = UserAuth();
     const navigate = useNavigate();
 
     const [profile, setProfile] = useState(null)
+    const [totalUploads, setTotalUploads] = useState(0) // ← added
 
     useEffect(() => {
         const getProfile = async () => {
             const { data: { session } } = await supabase.auth.getSession()
 
+            // fetch profile
             const { data } = await supabase
                 .from('profiles')
                 .select('*')
@@ -28,12 +30,18 @@ function MyProfile () {
                 .single()
 
             setProfile(data)
+
+            // fetch total uploads ← added
+            const { count } = await supabase
+                .from('resources')
+                .select('*', { count: 'exact', head: true }) // head: true means don't return rows, just the count
+                .eq('user_id', session.user.id)
+
+            setTotalUploads(count || 0)
         }
 
         getProfile()
     }, [])
-
-    console.log(session);
 
     return (
         <>
@@ -45,82 +53,44 @@ function MyProfile () {
 
                <div className="user-info">
                     <div className="profile-picture"></div>
-
                     <div className="username">{profile?.username}</div>
-                    
-                    <div className="level">
-                        {profile?.level}L
-                    </div>
-
-                    <div className="department">
-                        <span>{profile?.department}</span>
-                    </div>
+                    <div className="level">{profile?.level}L</div>
+                    <div className="department"><span>{profile?.department}</span></div>
                </div>
 
                 <div className="user-metric">
 
-               <div className="user-metrics">
-
-                    <div className="icon">
-                        <img className="profile-icon" src={upload}/>
+                    <div className="user-metrics">
+                        <div className="icon"><img className="profile-icon" src={upload}/></div>
+                        <div className="metrics-info">
+                            <span className="metrics-description">Total Uploads</span>
+                            <span className="metrics-value">{totalUploads}</span> {/* ← live count */}
+                        </div>
                     </div>
 
-                    <div className="metrics-info">
-                        <span className="metrics-description">Total Uploads</span>
-                        <span className="metrics-value">15</span>
+                    <div className="user-metrics">
+                        <div className="icon"><img className="profile-icon" src={upvote}/></div>
+                        <div className="metrics-info">
+                            <span className="metrics-description">Total Upvotes</span>
+                            <span className="metrics-value">75</span>
+                        </div>
                     </div>
 
-               </div>
-
-
-
-
-               <div className="user-metrics">
-
-                    <div className="icon">
-                        <img className="profile-icon" src={upvote}/>
+                    <div className="user-metrics">
+                        <div className="icon"><img className="profile-icon" src={people}/></div>
+                        <div className="metrics-info">
+                            <span className="metrics-description">Followers</span>
+                            <span className="metrics-value">236</span>
+                        </div>
                     </div>
 
-                    <div className="metrics-info">
-                        <span className="metrics-description">Total Upvotes</span>
-                        <span className="metrics-value">75</span>
+                    <div className="user-metrics">
+                        <div className="icon"><img className="profile-icon" src={people}/></div>
+                        <div className="metrics-info">
+                            <span className="metrics-description">Following</span>
+                            <span className="metrics-value">177</span>
+                        </div>
                     </div>
-
-               </div>
-
-
-
-
-
-               <div className="user-metrics">
-
-                    <div className="icon">
-                        <img className="profile-icon" src={people}/>
-                    </div>
-
-                    <div className="metrics-info">
-                        <span className="metrics-description">Followers</span>
-                        <span className="metrics-value">236</span>
-                    </div>
-
-               </div>
-
-
-
-
-
-               <div className="user-metrics">
-
-                    <div className="icon">
-                        <img className="profile-icon" src={people}/>
-                    </div>
-
-                    <div className="metrics-info">
-                        <span className="metrics-description">Following</span>
-                        <span className="metrics-value">177</span>
-                    </div>
-
-               </div>
 
                </div>
 

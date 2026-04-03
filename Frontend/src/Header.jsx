@@ -8,7 +8,7 @@ import { UserAuth } from "./context/AuthContext";
 
 function Header() {
 
-    const {session, signOut} = UserAuth();
+    const { session, signOut, points } = UserAuth() // ← added points
     const navigate = useNavigate();
 
     const [profile, setProfile] = useState(null)
@@ -29,11 +29,8 @@ function Header() {
         getProfile()
     }, [])
 
-    console.log(session);
-
     const handleSignOut = async (e) => {
         e.preventDefault()
-
         try {
             await signOut()
             navigate('/user-login')
@@ -44,20 +41,16 @@ function Header() {
 
     return (
         <>
-
         <SidePane />
-
         <div className="header">
             <div className="logo-and-title">
-            <img className="header-logo" src={logo} />
-            <h2 className="header-title">Points & Papers</h2>
+                <img className="header-logo" src={logo} />
+                <h2 className="header-title">Points & Papers</h2>
             </div>
 
             <div className="points-and-profile">
-            <p className="points">Points: <span>{profile?.points}</span></p>
-            <p 
-            onClick={handleSignOut}
-            className="sign-out">Sign Out</p>
+                <p className="points">Points: <span>{points}</span></p> {/* ← uses context points */}
+                <p onClick={handleSignOut} className="sign-out">Sign Out</p>
             </div>
         </div>
         </>

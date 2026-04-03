@@ -5,6 +5,10 @@
   text-align: center;
 }
 
+p {
+  background-color: transparent !important;
+}
+
 body {
   background-color: white;
 }

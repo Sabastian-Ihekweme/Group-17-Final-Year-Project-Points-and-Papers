@@ -1,5 +1,5 @@
 import React from "react";
-import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
+import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import UserRegistration from "./UserRegistration";
 import UserLogin from "./UserLogin"
 import Header from './Header'
@@ -13,33 +13,45 @@ import AIAnswer from "./AIAnswer";
 import AINotes from "./AINotes";
 import MyContributions from "./MyContributions";
 import Followers from "./Followers";
-import Notifications from "./Notifications"
+import Notifications from "./Notifications";
+import { UserAuth } from "./context/AuthContext";
 
+// ← protects routes, redirects to login if not authenticated
+const ProtectedRoute = ({ children }) => {
+    const { session } = UserAuth()
 
-function MyRoutes () {
+    if (session === undefined) return null // ← still loading, don't redirect yet
+
+    if (!session) return <Navigate to="/user-login" replace />
+
+    return children
+}
+
+function MyRoutes() {
 
     const location = useLocation();
 
     return (
-        <>
-            <Routes location={location} key={location.pathname}>
-                <Route index element={<UserRegistration />} />
-                <Route path="/user-registration" element={<UserRegistration />} />
-                <Route path="/user-login" element={<UserLogin />} />
-                <Route path="/header" element={<Header />} />
-                <Route path="/my-profile" element={<MyProfile/>} />
-                <Route path="/upload-resource" element={<ResourceUpload />} />
-                <Route path="/search-resources" element={<SearchResources />} />
-                <Route path="/resource-details-locked" element={<ResourceDetailsLocked/>} />
-                <Route path="/resource-details-image" element ={<ResourceDetailsImage />} />
-                <Route path="/resource-details-pdf" element ={<ResourceDetailsPDF />} />
-                <Route path="/generate-ai-answer" element ={<AIAnswer />} />
-                <Route path="/generate-ai-notes" element ={<AINotes />} />
-                <Route path="/my-contributions" element ={<MyContributions />} />
-                <Route path="/followers" element ={<Followers />} />
-                <Route path="/notifications" element ={<Notifications />} />
-            </Routes>
-        </>
+        <Routes location={location} key={location.pathname}>
+            {/* public routes */}
+            <Route index element={<UserRegistration />} />
+            <Route path="/user-registration" element={<UserRegistration />} />
+            <Route path="/user-login" element={<UserLogin />} />
+
+            {/* protected routes */}
+            <Route path="/header" element={<ProtectedRoute><Header /></ProtectedRoute>} />
+            <Route path="/my-profile" element={<ProtectedRoute><MyProfile /></ProtectedRoute>} />
+            <Route path="/upload-resource" element={<ProtectedRoute><ResourceUpload /></ProtectedRoute>} />
+            <Route path="/search-resources" element={<ProtectedRoute><SearchResources /></ProtectedRoute>} />
+            <Route path="/resource-details-locked" element={<ProtectedRoute><ResourceDetailsLocked /></ProtectedRoute>} />
+            <Route path="/resource-details-image" element={<ProtectedRoute><ResourceDetailsImage /></ProtectedRoute>} />
+            <Route path="/resource-details-pdf" element={<ProtectedRoute><ResourceDetailsPDF /></ProtectedRoute>} />
+            <Route path="/generate-ai-answer" element={<ProtectedRoute><AIAnswer /></ProtectedRoute>} />
+            <Route path="/generate-ai-notes" element={<ProtectedRoute><AINotes /></ProtectedRoute>} />
+            <Route path="/my-contributions" element={<ProtectedRoute><MyContributions /></ProtectedRoute>} />
+            <Route path="/followers" element={<ProtectedRoute><Followers /></ProtectedRoute>} />
+            <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
+        </Routes>
     )
 }
 
