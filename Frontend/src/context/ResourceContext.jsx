@@ -5,7 +5,7 @@ import { UserAuth } from "./AuthContext";
 const ResourceContext = createContext();
 
 export const ResourceContextProvider = ({ children }) => {
-    const { session, setPoints } = UserAuth()
+    const { session, setPoints, userPoints } = UserAuth()
     const [unlockedResources, setUnlockedResources] = useState([]);
     const [loading, setLoading] = useState(true);
 
@@ -104,6 +104,10 @@ export const ResourceContextProvider = ({ children }) => {
             // Check if user has enough points
             const pointsCost = pointsMap[resourceType] || 3;
 
+            if (userPoints < pointsCost) {
+                return { success: false, error: `Not enough points. You need ${pointsCost} points but have ${userPoints}` };
+            }
+
             // 1. Insert into unlocked_resources table
             const { error: unlockError } = await supabase
                 .from('unlocked_resources')
@@ -115,28 +119,179 @@ export const ResourceContextProvider = ({ children }) => {
 
             if (unlockError) throw unlockError;
 
-            // 2. Deduct points from user
-            const { error: pointsError } = await supabase.rpc('decrement_points', {
-                user_id: session.user.id,
-                points_to_deduct: pointsCost
-            });
+            // 2. Deduct points from user's profile
+            const { error: pointsError } = await supabase
+                .from('profiles')
+                .update({ points: userPoints - pointsCost })
+                .eq('id', session.user.id);
 
             if (pointsError) throw pointsError;
 
             // 3. Update local state
             setUnlockedResources(prev => [...prev, resourceId]);
-            setPoints(prev => prev - pointsCost);
+            setPoints(userPoints - pointsCost);
 
             return { success: true, pointsDeducted: pointsCost };
         } catch (error) {
             console.error('Error unlocking resource:', error);
-            return { success: false, error };
+            return { success: false, error: error.message || 'Failed to unlock resource' };
         }
     };
 
-    const uploadResource = async ({ title, description, courseCode, year, instructor, resourceType, file, department }) => {
+    // Fetch questions for a resource
+    const fetchQuestions = async (resourceId) => {
+        try {
+            const { data, error } = await supabase
+                .from('questions')
+                .select(`
+                    id,
+                    user_id,
+                    title,
+                    body,
+                    created_at,
+                    profiles(username),
+                    answers(
+                        id,
+                        user_id,
+                        body,
+                        created_at,
+                        profiles(username),
+                        upvotes:upvotes(count)
+                    )
+                `)
+                .eq('resource_id', resourceId)
+                .order('created_at', { ascending: false });
 
-        // 1. check for duplicate — same (course_code + instructor + year) OR same title
+            if (error) throw error;
+            return data || [];
+        } catch (error) {
+            console.error('Error fetching questions:', error);
+            return [];
+        }
+    };
+
+    // Post a question
+    const postQuestion = async (resourceId, title, body) => {
+        try {
+            const { data, error } = await supabase
+                .from('questions')
+                .insert({
+                    resource_id: resourceId,
+                    user_id: session.user.id,
+                    title,
+                    body
+                })
+                .select()
+                .single();
+
+            if (error) throw error;
+            return { success: true, data };
+        } catch (error) {
+            console.error('Error posting question:', error);
+            return { success: false, error: error.message };
+        }
+    };
+
+    // Post an answer to a question
+    const postAnswer = async (questionId, body) => {
+        try {
+            const { data, error } = await supabase
+                .from('answers')
+                .insert({
+                    question_id: questionId,
+                    user_id: session.user.id,
+                    body
+                })
+                .select()
+                .single();
+
+            if (error) throw error;
+            return { success: true, data };
+        } catch (error) {
+            console.error('Error posting answer:', error);
+            return { success: false, error: error.message };
+        }
+    };
+
+    // Upvote an answer
+    const upvoteAnswer = async (answerId) => {
+        try {
+            // Check if already upvoted
+            const { data: existingVote, error: checkError } = await supabase
+                .from('upvotes')
+                .select('id')
+                .eq('answer_id', answerId)
+                .eq('user_id', session.user.id)
+                .single();
+
+            if (checkError && checkError.code !== 'PGRST116') {
+                throw checkError;
+            }
+
+            if (existingVote) {
+                // Already upvoted, remove upvote
+                const { error: deleteError } = await supabase
+                    .from('upvotes')
+                    .delete()
+                    .eq('id', existingVote.id);
+
+                if (deleteError) throw deleteError;
+                return { success: true, upvoted: false };
+            } else {
+                // Add upvote
+                const { error: insertError } = await supabase
+                    .from('upvotes')
+                    .insert({
+                        answer_id: answerId,
+                        user_id: session.user.id
+                    });
+
+                if (insertError) throw insertError;
+                return { success: true, upvoted: true };
+            }
+        } catch (error) {
+            console.error('Error upvoting answer:', error);
+            return { success: false, error: error.message };
+        }
+    };
+
+    // Delete a question
+    const deleteQuestion = async (questionId) => {
+        try {
+            const { error } = await supabase
+                .from('questions')
+                .delete()
+                .eq('id', questionId)
+                .eq('user_id', session.user.id);
+
+            if (error) throw error;
+            return { success: true };
+        } catch (error) {
+            console.error('Error deleting question:', error);
+            return { success: false, error: error.message };
+        }
+    };
+
+    // Delete an answer
+    const deleteAnswer = async (answerId) => {
+        try {
+            const { error } = await supabase
+                .from('answers')
+                .delete()
+                .eq('id', answerId)
+                .eq('user_id', session.user.id);
+
+            if (error) throw error;
+            return { success: true };
+        } catch (error) {
+            console.error('Error deleting answer:', error);
+            return { success: false, error: error.message };
+        }
+    };
+
+    const uploadResource = async ({ title, description, courseCode, year, instructor, resourceType, files, department }) => {
+
+        // 1. check for duplicate
         const { data: existingByCombination } = await supabase
             .from('resources')
             .select('id')
@@ -158,25 +313,30 @@ export const ResourceContextProvider = ({ children }) => {
             return { success: false, error: 'Resource already exists' }
         }
 
-        // 2. upload file to storage
-        const fileExt = file.name.split('.').pop()
-        const fileName = `${Date.now()}_${file.name}`
-        const { error: fileError } = await supabase.storage
+        // 2. Upload first file to get URL for the resources table
+        let primaryFileUrl = null;
+        const firstFile = files[0];
+        const firstFileExt = firstFile.name.split('.').pop();
+        const firstFileName = `${Date.now()}_${Math.random()}_${firstFile.name}`;
+        
+        const { error: firstFileError } = await supabase.storage
             .from('resources')
-            .upload(fileName, file)
+            .upload(firstFileName, firstFile);
 
-        if (fileError) {
-            console.error('file upload error: ', fileError)
-            return { success: false, error: fileError }
+        if (firstFileError) {
+            console.error('file upload error: ', firstFileError);
+            return { success: false, error: firstFileError };
         }
 
-        // 3. get public url
+        // Get public URL for first file
         const { data: { publicUrl } } = supabase.storage
             .from('resources')
-            .getPublicUrl(fileName)
+            .getPublicUrl(firstFileName);
 
-        // 4. save to database
-        const { data, error } = await supabase
+        primaryFileUrl = publicUrl;
+
+        // 3. Create the main resource entry with first file URL
+        const { data: resourceData, error: resourceError } = await supabase
             .from('resources')
             .insert({
                 user_id: session.user.id,
@@ -186,29 +346,76 @@ export const ResourceContextProvider = ({ children }) => {
                 year,
                 instructor,
                 resource_type: resourceType,
-                file_url: publicUrl,
-                file_type: fileExt === 'pdf' ? 'pdf' : 'image',
+                file_url: primaryFileUrl,
+                file_type: firstFileExt === 'pdf' ? 'pdf' : 'image',
                 department
             })
+            .select()
+            .single()
 
-        if (error) {
-            console.error('database insert error: ', error)
-            return { success: false, error }
+        if (resourceError) {
+            console.error('database insert error: ', resourceError)
+            return { success: false, error: resourceError }
         }
 
-        // 5. update points in database + context
+        const resourceId = resourceData.id;
+
+        // 4. Upload ALL files (including first) to resource_files table
+        const uploadedFiles = [];
+        
+        for (const file of files) {
+            try {
+                const fileExt = file.name.split('.').pop();
+                const fileName = `${Date.now()}_${Math.random()}_${file.name}`;
+                
+                // Upload to storage
+                const { error: fileError } = await supabase.storage
+                    .from('resources')
+                    .upload(fileName, file);
+
+                if (fileError) {
+                    console.error('file upload error: ', fileError);
+                    continue;
+                }
+
+                // Get public URL
+                const { data: { publicUrl } } = supabase.storage
+                    .from('resources')
+                    .getPublicUrl(fileName);
+
+                // Store file reference in resource_files table
+                const { error: fileRefError } = await supabase
+                    .from('resource_files')
+                    .insert({
+                        resource_id: resourceId,
+                        file_url: publicUrl,
+                        file_type: fileExt === 'pdf' ? 'pdf' : 'image'
+                    });
+
+                if (fileRefError) {
+                    console.error('file reference error: ', fileRefError);
+                    continue;
+                }
+
+                uploadedFiles.push(publicUrl);
+            } catch (error) {
+                console.error('Error uploading file:', error);
+            }
+        }
+
+        // 5. Update points
         const pointsToAdd = pointsMap[resourceType] || 3
 
-        const { error: pointsError } = await supabase.rpc('increment_points', {
-            user_id: session.user.id,
-            points_to_add: pointsToAdd
-        })
+        const { error: pointsError } = await supabase
+            .from('profiles')
+            .update({ points: userPoints + pointsToAdd })
+            .eq('id', session.user.id);
 
         if (!pointsError) {
-            setPoints(prev => prev + pointsToAdd)
+            setPoints(userPoints + pointsToAdd)
         }
 
-        return { success: true, data, pointsEarned: pointsToAdd }
+        return { success: true, data: resourceData, pointsEarned: pointsToAdd, filesUploaded: uploadedFiles.length }
     }
 
     const value = {
@@ -216,6 +423,12 @@ export const ResourceContextProvider = ({ children }) => {
         searchResources,
         unlockResource,
         fetchAllResources,
+        fetchQuestions,
+        postQuestion,
+        postAnswer,
+        upvoteAnswer,
+        deleteQuestion,
+        deleteAnswer,
         unlockedResources,
         loading
     };

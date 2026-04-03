@@ -7,10 +7,12 @@ import './styles/SearchResources.css'
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { UseResource } from './context/ResourceContext';
+import { UserAuth } from './context/AuthContext';
 
 function SearchResources () {
 
     const navigate = useNavigate();
+    const { session } = UserAuth();
     const { searchResources, unlockResource, unlockedResources, loading } = UseResource();
     
     // State Management
@@ -148,14 +150,18 @@ function SearchResources () {
         applyFiltersAndSearch();
     };
 
-    // Handle Resource Click - Show Modal
+    // Handle Resource Click - Show Modal or Redirect
     const handleResourceClick = (resource) => {
-        if (!unlockedResources.includes(resource.id)) {
+        // Check if user owns this resource
+        const isOwnResource = resource.user_id === session?.user?.id;
+        
+        // Skip unlock modal for own resources or already unlocked
+        if (isOwnResource || unlockedResources.includes(resource.id)) {
+            redirectToDetails(resource);
+        } else {
+            // Show unlock modal for locked resources
             setSelectedResource(resource);
             setShowModal(true);
-        } else {
-            // Already unlocked, go to details page
-            redirectToDetails(resource);
         }
     };
 
@@ -268,6 +274,22 @@ function SearchResources () {
                             />
                         </div>
 
+                        <div className="filter">
+                            <select 
+                                id="department" 
+                                name="department"
+                                value={filters.department}
+                                onChange={handleFilterChange}
+                            >
+                                <option value="">Select Department</option>
+                                <option value="Computer Science">Computer Science</option>
+                                <option value="Cyber Security">Cyber Security</option>
+                                <option value="Data Science">Data Science</option>
+                                <option value="Information Technology">Information Technology</option>
+                                <option value="Information Systems">Information Systems</option>
+                                <option value="Software Engineering">Software Engineering</option>
+                            </select>
+                        </div>
 
                         <button type="submit" className="filter-button">Search</button>
                     </div>
@@ -311,10 +333,12 @@ function SearchResources () {
                                         {result.instructor} 
                                     </div>
 
-                                    <p className={`locked-status ${unlockedResources.includes(result.id) ? 'unlocked' : 'locked'}`}>
-                                        {unlockedResources.includes(result.id) 
-                                            ? 'Unlocked ✓' 
-                                            : `Locked (${getPoints(result.resource_type)} pts)`
+                                    <p className={`locked-status ${(result.user_id === session?.user?.id || unlockedResources.includes(result.id)) ? 'unlocked' : 'locked'}`}>
+                                        {result.user_id === session?.user?.id
+                                            ? '👤 Your Resource' 
+                                            : unlockedResources.includes(result.id) 
+                                                ? 'Unlocked ✓' 
+                                                : `Locked (${getPoints(result.resource_type)} pts)`
                                         }
                                     </p>
                                 </div>

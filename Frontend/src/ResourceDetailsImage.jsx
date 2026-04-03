@@ -1,18 +1,28 @@
-import {useState, useRef, useEffect} from 'react';
+import {useState, useEffect} from 'react';
 import { ChevronLeft, ChevronRight, ChevronDown, MessageSquare, ThumbsUp, Reply, Trash2 } from 'lucide-react';
-import { useParams, useLocation } from 'react-router-dom';
+import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import Header from "./Header";
 import "./styles/ResourceDetailsUnlocked.css";
 import { UseResource } from './context/ResourceContext';
+import { UserAuth } from './context/AuthContext';
+import supabase from './config/supabaseClient';
 
 function ResourceDetailsImage() {
     const { id } = useParams();
     const location = useLocation();
-    const { fetchAllResources } = UseResource();
+    const navigate = useNavigate();
+    const { session } = UserAuth();
+    const { fetchAllResources, fetchQuestions, postQuestion, postAnswer, upvoteAnswer, deleteQuestion, deleteAnswer } = UseResource();
     
     const [resource, setResource] = useState(null);
+    const [resourceImages, setResourceImages] = useState([]);
+    const [questions, setQuestions] = useState([]);
     const [loading, setLoading] = useState(true);
     const [currentIndex, setCurrentIndex] = useState(0);
+    const [newQuestion, setNewQuestion] = useState('');
+    const [newAnswerTexts, setNewAnswerTexts] = useState({});
+    const [replyingTo, setReplyingTo] = useState(null);
+    const [upvotedAnswers, setUpvotedAnswers] = useState(new Set());
 
     // Fetch resource on mount
     useEffect(() => {
@@ -20,18 +30,14 @@ function ResourceDetailsImage() {
             try {
                 setLoading(true);
                 
-                // Check if resource was passed via location state
                 if (location.state?.resource?.id === id) {
                     setResource(location.state.resource);
                 } else {
-                    // Fetch all resources and find the one with matching ID
                     const allResources = await fetchAllResources();
                     const foundResource = allResources.find(r => r.id === id);
                     
                     if (foundResource) {
                         setResource(foundResource);
-                    } else {
-                        console.error('Resource not found');
                     }
                 }
             } catch (error) {
@@ -46,10 +52,48 @@ function ResourceDetailsImage() {
         }
     }, [id, location.state, fetchAllResources]);
 
-    // For image resources, get the images array
-    // If your DB stores multiple images per resource, fetch them here
-    // For now, we'll display the single file_url
-    const resources = resource?.file_url ? [resource.file_url] : [];
+    // Fetch all images for this resource
+    useEffect(() => {
+        const loadResourceImages = async () => {
+            if (resource?.id) {
+                try {
+                    const { data, error } = await supabase
+                        .from('resource_files')
+                        .select('file_url')
+                        .eq('resource_id', resource.id)
+                        .eq('file_type', 'image');
+
+                    if (error) throw error;
+
+                    if (data && data.length > 0) {
+                        setResourceImages(data.map(f => f.file_url));
+                    } else if (resource?.file_url) {
+                        setResourceImages([resource.file_url]);
+                    }
+                } catch (error) {
+                    console.error('Error loading resource images:', error);
+                    if (resource?.file_url) {
+                        setResourceImages([resource.file_url]);
+                    }
+                }
+            }
+        };
+
+        loadResourceImages();
+    }, [resource?.id]);
+
+    // Fetch questions when resource loads
+    useEffect(() => {
+        if (resource?.id) {
+            const loadQuestions = async () => {
+                const data = await fetchQuestions(resource.id);
+                setQuestions(data);
+            };
+            loadQuestions();
+        }
+    }, [resource?.id, fetchQuestions]);
+
+    const resources = resourceImages.length > 0 ? resourceImages : [];
 
     const goToPrevious = () => {
         setCurrentIndex((prevIndex) => 
@@ -78,7 +122,7 @@ function ResourceDetailsImage() {
             const url = URL.createObjectURL(content);
             const link = document.createElement('a');
             link.href = url;
-            link.download = `${resource.title}-images.zip`;
+            link.download = `${resource?.title || 'images'}.zip`;
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
@@ -89,126 +133,131 @@ function ResourceDetailsImage() {
         }
     };
 
-    const [comments, setComments] = useState([
-        {
-          id: 1,
-          author: 'Sarah Johnson',
-          avatar: 'https://i.pravatar.cc/150?img=1',
-          text: 'This is such an insightful post! Really helps clarify the concepts.',
-          timestamp: '2 hours ago',
-          likes: 12,
-          replies: []
-        }
-    ]);
+    // Handle posting a new question
+    const handlePostQuestion = async () => {
+        if (!newQuestion.trim()) return;
 
-    const [newComment, setNewComment] = useState('');
-    const [replyingTo, setReplyingTo] = useState(null);
-    const [replyText, setReplyText] = useState('');
-    const [visibleReplies, setVisibleReplies] = useState({});
-    const [showReplies, setShowReplies] = useState({});
-
-    const addComment = () => {
-        if (newComment.trim()) {
-            const comment = {
-                id: Date.now(),
-                author: 'You',
-                avatar: 'https://i.pravatar.cc/150?img=10',
-                text: newComment,
-                timestamp: 'Just now',
-                likes: 0,
-                replies: []
-            };
-            setComments([comment, ...comments]);
-            setNewComment('');
+        const result = await postQuestion(resource.id, newQuestion, '');
+        
+        if (result.success) {
+            setNewQuestion('');
+            const data = await fetchQuestions(resource.id);
+            setQuestions(data);
+        } else {
+            alert('Failed to post question: ' + result.error);
         }
     };
 
-    const addReply = (parentId) => {
-        if (replyText.trim()) {
-            const reply = {
-                id: Date.now(),
-                author: 'You',
-                avatar: 'https://i.pravatar.cc/150?img=10',
-                text: replyText,
-                timestamp: 'Just now',
-                likes: 0,
-                replies: []
-            };
+    // Handle posting an answer
+    const handlePostAnswer = async (questionId) => {
+        const answerText = newAnswerTexts[questionId];
+        if (!answerText?.trim()) return;
 
-            const addReplyToComment = (commentList) => {
-                return commentList.map(comment => {
-                    if (comment.id === parentId) {
-                        return {
-                            ...comment,
-                            replies: [reply, ...comment.replies]
-                        };
-                    }
-                    return comment;
-                });
-            };
-
-            setComments(addReplyToComment(comments));
-            setReplyText('');
+        const result = await postAnswer(questionId, answerText);
+        
+        if (result.success) {
+            setNewAnswerTexts(prev => ({ ...prev, [questionId]: '' }));
             setReplyingTo(null);
+            const data = await fetchQuestions(resource.id);
+            setQuestions(data);
+        } else {
+            alert('Failed to post answer: ' + result.error);
         }
     };
 
-    const likeComment = (commentId) => {
-        const updateLikes = (commentList) => {
-            return commentList.map(comment => {
-                if (comment.id === commentId) {
-                    return { ...comment, likes: comment.likes + 1 };
-                }
-                return comment;
-            });
-        };
-
-        setComments(updateLikes(comments));
+    // Handle upvoting an answer
+    const handleUpvote = async (answerId) => {
+        const result = await upvoteAnswer(answerId);
+        
+        if (result.success) {
+            if (result.upvoted) {
+                setUpvotedAnswers(prev => new Set([...prev, answerId]));
+            } else {
+                setUpvotedAnswers(prev => {
+                    const newSet = new Set(prev);
+                    newSet.delete(answerId);
+                    return newSet;
+                });
+            }
+            const data = await fetchQuestions(resource.id);
+            setQuestions(data);
+        }
     };
 
-    const deleteComment = (commentId) => {
-        setComments(comments.filter(comment => comment.id !== commentId));
+    // Handle deleting a question
+    const handleDeleteQuestion = async (questionId) => {
+        if (!window.confirm('Are you sure you want to delete this question?')) return;
+
+        const result = await deleteQuestion(questionId);
+        
+        if (result.success) {
+            const data = await fetchQuestions(resource.id);
+            setQuestions(data);
+        } else {
+            alert('Failed to delete question: ' + result.error);
+        }
     };
 
-    const Comment = ({ comment }) => {
+    // Handle deleting an answer
+    const handleDeleteAnswer = async (answerId) => {
+        if (!window.confirm('Are you sure you want to delete this answer?')) return;
+
+        const result = await deleteAnswer(answerId);
+        
+        if (result.success) {
+            const data = await fetchQuestions(resource.id);
+            setQuestions(data);
+        } else {
+            alert('Failed to delete answer: ' + result.error);
+        }
+    };
+
+    const Question = ({ question }) => {
+        const userProfile = question.profiles || {};
+        const answers = question.answers || [];
+        const isOwnQuestion = question.user_id === session?.user?.id;
+
         return (
             <div className="comment-wrapper">
                 <div className="comment-container">
-                    <img src={comment.avatar} alt={comment.author} className="avatar" />
+                    <img 
+                        src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${question.user_id}`} 
+                        alt={userProfile.username} 
+                        className="avatar" 
+                        onClick={() => navigate(`/profile/${question.user_id}`)}
+                        style={{ cursor: 'pointer' }}
+                    />
                     
                     <div className="comment-content">
                         <div className="comment-header">
-                            <span className="author-name">{comment.author}</span>
-                            <span className="timestamp">{comment.timestamp}</span>
+                            <span 
+                                className="author-name"
+                                onClick={() => navigate(`/profile/${question.user_id}`)}
+                                style={{ cursor: 'pointer', color: '#1F9EF9' }}
+                            >
+                                {userProfile.username || 'Anonymous'}
+                            </span>
+                            <span className="timestamp">
+                                {new Date(question.created_at).toLocaleDateString()}
+                            </span>
                         </div>
                         
-                        <p className="comment-text">{comment.text}</p>
+                        <p className="comment-text" style={{ fontWeight: 'bold' }}>{question.title}</p>
+                        <p className="comment-text">{question.body}</p>
                         
                         <div className="comment-actions">
                             <button 
                                 className="action-button"
-                                onClick={() => likeComment(comment.id)}
-                            >
-                                <ThumbsUp style={{ width: '0.875rem', height: '0.875rem' }} />
-                                <span>{comment.likes}</span>
-                            </button>
-                            
-                            <button 
-                                className="action-button"
-                                onClick={() => setReplyingTo(comment.id)}
+                                onClick={() => setReplyingTo(replyingTo === question.id ? null : question.id)}
                             >
                                 <Reply style={{ width: '0.875rem', height: '0.875rem' }} />
-                                <span>Answer</span>
+                                <span>Answer ({answers.length})</span>
                             </button>
 
-                            {comment.author === 'You' && (
+                            {isOwnQuestion && (
                                 <button 
                                     className="action-button delete-button"
-                                    onClick={() => {
-                                        if (window.confirm('Are you sure?')) {
-                                            deleteComment(comment.id);
-                                        }
-                                    }}
+                                    onClick={() => handleDeleteQuestion(question.id)}
                                 >
                                     <Trash2 style={{ width: '0.875rem', height: '0.875rem' }} />
                                     <span>Delete</span>
@@ -216,31 +265,91 @@ function ResourceDetailsImage() {
                             )}
                         </div>
 
-                        {replyingTo === comment.id && (
+                        {replyingTo === question.id && (
                             <div className="reply-input-container">
-                                <input
-                                    type="text"
-                                    value={replyText}
-                                    onChange={(e) => setReplyText(e.target.value)}
-                                    placeholder={`Answer ${comment.author}...`}
+                                <textarea
+                                    value={newAnswerTexts[question.id] || ''}
+                                    onChange={(e) => setNewAnswerTexts(prev => ({ ...prev, [question.id]: e.target.value }))}
+                                    placeholder="Write your answer..."
                                     className="reply-input"
-                                    onKeyDown={(e) => {
-                                        if (e.key === 'Enter') {
-                                            addReply(comment.id);
-                                        }
-                                    }}
-                                    autoFocus
+                                    style={{ minHeight: '80px', resize: 'vertical' }}
                                 />
-                                <button onClick={() => addReply(comment.id)} className="submit-reply-button">
-                                    Post
-                                </button>
-                                <button onClick={() => setReplyingTo(null)} className="cancel-button">
-                                    Cancel
-                                </button>
+                                <div style={{ display: 'flex', gap: '8px' }}>
+                                    <button onClick={() => handlePostAnswer(question.id)} className="submit-reply-button">
+                                        Post Answer
+                                    </button>
+                                    <button onClick={() => setReplyingTo(null)} className="cancel-button">
+                                        Cancel
+                                    </button>
+                                </div>
                             </div>
                         )}
                     </div>
                 </div>
+
+                {/* Answers */}
+                {answers.length > 0 && (
+                    <div className="replies-container">
+                        {answers.map(answer => {
+                            const answerProfile = answer.profiles || {};
+                            const upvoteCount = answer.upvotes?.[0]?.count || 0;
+                            const isOwnAnswer = answer.user_id === session?.user?.id;
+                            const isUpvoted = upvotedAnswers.has(answer.id);
+
+                            return (
+                                <div key={answer.id} className="comment-wrapper" style={{ marginLeft: '20px' }}>
+                                    <div className="comment-container">
+                                        <img 
+                                            src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${answer.user_id}`} 
+                                            alt={answerProfile.username} 
+                                            className="avatar" 
+                                            onClick={() => navigate(`/profile/${answer.user_id}`)}
+                                            style={{ cursor: 'pointer' }}
+                                        />
+                                        
+                                        <div className="comment-content">
+                                            <div className="comment-header">
+                                                <span 
+                                                    className="author-name"
+                                                    onClick={() => navigate(`/profile/${answer.user_id}`)}
+                                                    style={{ cursor: 'pointer', color: '#1F9EF9' }}
+                                                >
+                                                    {answerProfile.username || 'Anonymous'}
+                                                </span>
+                                                <span className="timestamp">
+                                                    {new Date(answer.created_at).toLocaleDateString()}
+                                                </span>
+                                            </div>
+                                            
+                                            <p className="comment-text">{answer.body}</p>
+                                            
+                                            <div className="comment-actions">
+                                                <button 
+                                                    className={`action-button ${isUpvoted ? 'upvoted' : ''}`}
+                                                    onClick={() => handleUpvote(answer.id)}
+                                                    style={{ color: isUpvoted ? '#1F9EF9' : 'inherit' }}
+                                                >
+                                                    <ThumbsUp style={{ width: '0.875rem', height: '0.875rem' }} />
+                                                    <span>{upvoteCount}</span>
+                                                </button>
+
+                                                {isOwnAnswer && (
+                                                    <button 
+                                                        className="action-button delete-button"
+                                                        onClick={() => handleDeleteAnswer(answer.id)}
+                                                    >
+                                                        <Trash2 style={{ width: '0.875rem', height: '0.875rem' }} />
+                                                        <span>Delete</span>
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                )}
             </div>
         );
     };
@@ -286,7 +395,6 @@ function ResourceDetailsImage() {
                     
                     <div className="resource-metadata">
                     <p className="instructor">By {resource.instructor}</p>
-
                     <p className="description">{resource.description || 'No description provided'}</p>
                     </div>
 
@@ -356,25 +464,29 @@ function ResourceDetailsImage() {
                     
                         <h2 className="section-header">
                         <MessageSquare style={{ width: '1.5rem', height: '1.5rem' }} />
-                        Questions ({comments.length})
+                        Questions ({questions.length})
                         </h2>
 
                         <div className="new-comment-container">
                         <textarea
-                            value={newComment}
-                            onChange={(e) => setNewComment(e.target.value)}
+                            value={newQuestion}
+                            onChange={(e) => setNewQuestion(e.target.value)}
                             placeholder="Ask a question..."
                             className="comment-input"
                         />
-                        <button onClick={addComment} className="submit-button">
+                        <button onClick={handlePostQuestion} className="submit-button">
                             Post Question
                         </button>
                         </div>
 
                         <div className="comments-list">
-                        {comments.map(comment => (
-                            <Comment key={comment.id} comment={comment}/>
-                        ))}
+                        {questions.length > 0 ? (
+                            questions.map(question => (
+                                <Question key={question.id} question={question}/>
+                            ))
+                        ) : (
+                            <p style={{ textAlign: 'center', color: '#999' }}>No questions yet. Be the first to ask!</p>
+                        )}
                         </div>
                 </div> 
                     </div>
@@ -393,10 +505,6 @@ function ResourceDetailsImage() {
                             Generate AI Answers
                         </button>
                     </div>
-
-
-
-
                     </div>
                     
 
