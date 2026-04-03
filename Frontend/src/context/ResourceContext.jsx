@@ -5,7 +5,7 @@ import { UserAuth } from "./AuthContext";
 const ResourceContext = createContext();
 
 export const ResourceContextProvider = ({ children }) => {
-    const { session, setPoints, userPoints } = UserAuth()
+    const { session, setPoints } = UserAuth()
     const [unlockedResources, setUnlockedResources] = useState([]);
     const [loading, setLoading] = useState(true);
 
@@ -82,6 +82,12 @@ export const ResourceContextProvider = ({ children }) => {
                 query = query.eq('department', filters.department);
             }
 
+            if (filters.level) {
+                // Extract level from course code
+                const levelNum = parseInt(filters.level);
+                query = query.gte('course_code', `${levelNum}`).lt('course_code', `${levelNum + 100}`);
+            }
+
             const { data, error } = await query.order('created_at', { ascending: false });
 
             if (error) throw error;
@@ -98,10 +104,6 @@ export const ResourceContextProvider = ({ children }) => {
             // Check if user has enough points
             const pointsCost = pointsMap[resourceType] || 3;
 
-            if (userPoints < pointsCost) {
-                return { success: false, error: `Not enough points. You need ${pointsCost} points but have ${userPoints}` };
-            }
-
             // 1. Insert into unlocked_resources table
             const { error: unlockError } = await supabase
                 .from('unlocked_resources')
@@ -113,22 +115,22 @@ export const ResourceContextProvider = ({ children }) => {
 
             if (unlockError) throw unlockError;
 
-            // 2. Deduct points from user's profile
-            const { error: pointsError } = await supabase
-                .from('profiles')
-                .update({ points: userPoints - pointsCost })
-                .eq('id', session.user.id);
+            // 2. Deduct points from user
+            const { error: pointsError } = await supabase.rpc('decrement_points', {
+                user_id: session.user.id,
+                points_to_deduct: pointsCost
+            });
 
             if (pointsError) throw pointsError;
 
             // 3. Update local state
             setUnlockedResources(prev => [...prev, resourceId]);
-            setPoints(userPoints - pointsCost);
+            setPoints(prev => prev - pointsCost);
 
             return { success: true, pointsDeducted: pointsCost };
         } catch (error) {
             console.error('Error unlocking resource:', error);
-            return { success: false, error: error.message || 'Failed to unlock resource' };
+            return { success: false, error };
         }
     };
 
@@ -197,13 +199,13 @@ export const ResourceContextProvider = ({ children }) => {
         // 5. update points in database + context
         const pointsToAdd = pointsMap[resourceType] || 3
 
-        const { error: pointsError } = await supabase
-            .from('profiles')
-            .update({ points: userPoints + pointsToAdd })
-            .eq('id', session.user.id);
+        const { error: pointsError } = await supabase.rpc('increment_points', {
+            user_id: session.user.id,
+            points_to_add: pointsToAdd
+        })
 
         if (!pointsError) {
-            setPoints(userPoints + pointsToAdd)
+            setPoints(prev => prev + pointsToAdd)
         }
 
         return { success: true, data, pointsEarned: pointsToAdd }

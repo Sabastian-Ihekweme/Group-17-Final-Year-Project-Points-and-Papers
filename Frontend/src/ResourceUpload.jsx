@@ -79,14 +79,15 @@ function ResourceUpload() {
         if (!courseCode) return setError("Please enter a course code")
         if (!year) return setError("Please enter an academic year")
         if (!instructor) return setError("Please enter an instructor name")
-        if (files.length === 0) return setError("Please upload a file")
+        if (files.length === 0) return setError("Please upload at least one file")
 
         setLoading(true)
 
+        // Upload ALL files, not just the first one
         const result = await uploadResource({
             title, description, courseCode, year, instructor,
             resourceType: selectedResourceType,
-            file: files[0]
+            files: files  // ← pass all files instead of files[0]
         })
 
         if (result.success) {
@@ -190,7 +191,7 @@ function ResourceUpload() {
 
                     </div>
 
-                    <h2>Upload File</h2>
+                    <h2>Upload Files</h2>
 
                     <div className="card">
                         <div
@@ -207,6 +208,7 @@ function ResourceUpload() {
                                 accept=".pdf, image/*"
                                 onChange={handleFileSelect}
                                 className="hidden-input"
+                                multiple  // ← Allow multiple file selection
                             />
 
                             <svg className="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -214,7 +216,7 @@ function ResourceUpload() {
                             </svg>
 
                             <p className="main-text">
-                                {isDragging ? 'Drop files here' : 'Drag & drop your file here, or click to browse'}
+                                {isDragging ? 'Drop files here' : 'Drag & drop your files here, or click to browse'}
                             </p>
                             <p className="sub-text">(Max file size: 20MB, accepted formats: PDF, JPG, PNG)</p>
                         </div>
@@ -227,7 +229,7 @@ function ResourceUpload() {
                                         <div className="file-info">
                                             <svg className="file-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                            </svg>
+                            </svg>
                                             <div>
                                                 <p className="file-name">{file.name}</p>
                                                 <p className="file-size">{formatFileSize(file.size)}</p>

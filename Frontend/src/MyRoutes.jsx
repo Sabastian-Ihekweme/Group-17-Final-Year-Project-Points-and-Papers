@@ -44,8 +44,11 @@ function MyRoutes() {
             <Route path="/upload-resource" element={<ProtectedRoute><ResourceUpload /></ProtectedRoute>} />
             <Route path="/search-resources" element={<ProtectedRoute><SearchResources /></ProtectedRoute>} />
             <Route path="/resource-details-locked" element={<ProtectedRoute><ResourceDetailsLocked /></ProtectedRoute>} />
-            <Route path="/resource-details-image" element={<ProtectedRoute><ResourceDetailsImage /></ProtectedRoute>} />
-            <Route path="/resource-details-pdf" element={<ProtectedRoute><ResourceDetailsPDF /></ProtectedRoute>} />
+            
+            {/* Dynamic resource detail routes with ID parameter */}
+            <Route path="/resource-details-image/:id" element={<ProtectedRoute><ResourceDetailsImage /></ProtectedRoute>} />
+            <Route path="/resource-details-pdf/:id" element={<ProtectedRoute><ResourceDetailsPDF /></ProtectedRoute>} />
+            
             <Route path="/generate-ai-answer" element={<ProtectedRoute><AIAnswer /></ProtectedRoute>} />
             <Route path="/generate-ai-notes" element={<ProtectedRoute><AINotes /></ProtectedRoute>} />
             <Route path="/my-contributions" element={<ProtectedRoute><MyContributions /></ProtectedRoute>} />
