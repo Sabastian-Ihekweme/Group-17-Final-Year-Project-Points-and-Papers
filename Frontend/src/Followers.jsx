@@ -1,52 +1,99 @@
-import {useState} from "react";
+import { useEffect, useState } from "react";
 import Header from "./Header";
-import notification from "./assets/icons/bell.png";
-import user from "./assets/icons/user.png"
+import { useNavigate } from 'react-router-dom';
 import "./styles/Followers.css";
+import { UserAuth } from './context/AuthContext';
+import { UseResource } from './context/ResourceContext';
+import supabase from './config/supabaseClient';
 
 function Followers() {
 
-const [activeTab, setActiveTab] = useState("followers");
+    const navigate = useNavigate();
+    const { session } = UserAuth();
+    const { unfollowUser } = UseResource();
 
-const followers = [
-    { profilePic: "user", username: "Alice Johnson" },
-    { profilePic: "user", username: "Michael Applewhite" },
-    { profilePic: "user", username: "Sarah Connor" },
-    { profilePic: "user", username: "James Okafor" },
-    { profilePic: "user", username: "Priya Nair" },
-    { profilePic: "user", username: "Ethan Brooks" },
-    { profilePic: "user", username: "Fatima Yusuf" },
-    { profilePic: "user", username: "Carlos Rivera" },
-    { profilePic: "user", username: "Lena Müller" },
-    { profilePic: "user", username: "David Osei" },
-    { profilePic: "user", username: "Yuki Tanaka" },
-    { profilePic: "user", username: "Amara Diallo" },
-];
+    const [activeTab, setActiveTab] = useState("followers");
+    const [followers, setFollowers] = useState([]);
+    const [following, setFollowing] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [searchQuery, setSearchQuery] = useState("");
 
-const following = [
-    { profilePic: {user}, username: "Michael Applewhite" },  // also follows back
-    { profilePic: {user}, username: "Sarah Connor" },         // also follows back
-    { profilePic: {user}, username: "Ethan Brooks" },         // also follows back
-    { profilePic: {user}, username: "Fatima Yusuf" },         // also follows back
-    { profilePic: {user}, username: "Tom Hansley" },
-    { profilePic: {user}, username: "Grace Okonkwo" },
-    { profilePic: {user}, username: "Ravi Patel" },
-    { profilePic: {user}, username: "Nina Petrova" },
-    { profilePic: {user}, username: "Omar Khalid" },
-    { profilePic: {user}, username: "Zoe Adeyemi" },
-    { profilePic: {user}, username: "Ben Nakamura" },
-    { profilePic: {user}, username: "Isla Ferguson" },
-    { profilePic: {user}, username: "Kwame Mensah" },
-];
+    useEffect(() => {
+        const loadConnections = async () => {
+            try {
+                setLoading(true);
 
+                // Fetch followers
+                const { data: followersData } = await supabase
+                    .from('follows')
+                    .select(`
+                        follower_id,
+                        profiles:follower_id(id, username, level, department)
+                    `)
+                    .eq('following_id', session.user.id);
 
-    function checkFollower(follower) {
-        if (following.some(item => item.username === follower)) {
-            return "is-following"
-        } else {
-            return "not-following"
+                setFollowers(followersData?.map(f => f.profiles) || []);
+
+                // Fetch following
+                const { data: followingData } = await supabase
+                    .from('follows')
+                    .select(`
+                        following_id,
+                        profiles:following_id(id, username, level, department)
+                    `)
+                    .eq('follower_id', session.user.id);
+
+                setFollowing(followingData?.map(f => f.profiles) || []);
+
+            } catch (error) {
+                console.error('Error loading connections:', error);
+            } finally {
+                setLoading(false);
+            }
         };
+
+        if (session?.user?.id) {
+            loadConnections();
+        }
+    }, [session?.user?.id]);
+
+    const handleUnfollow = async (userIdToUnfollow) => {
+        try {
+            const result = await unfollowUser(userIdToUnfollow);
+            if (result.success) {
+                setFollowing(prev => prev.filter(f => f.id !== userIdToUnfollow));
+            }
+        } catch (error) {
+            console.error('Error unfollowing:', error);
+        }
     };
+
+    const handleRemoveFollower = async (followerId) => {
+        try {
+            const { error } = await supabase
+                .from('follows')
+                .delete()
+                .eq('follower_id', followerId)
+                .eq('following_id', session.user.id);
+
+            if (!error) {
+                setFollowers(prev => prev.filter(f => f.id !== followerId));
+            }
+        } catch (error) {
+            console.error('Error removing follower:', error);
+        }
+    };
+
+    const getFilteredList = () => {
+        const list = activeTab === "followers" ? followers : following;
+        if (!searchQuery.trim()) return list;
+        
+        return list.filter(user =>
+            user.username.toLowerCase().includes(searchQuery.toLowerCase())
+        );
+    };
+
+    const filteredList = getFilteredList();
 
     return (
         <>
@@ -56,60 +103,77 @@ const following = [
                 
                 <h1>Manage Connections</h1>
 
-                <div className="view-notifications-button">
-                    <img className="notification-icon" src={notification}/>
-                    <button>View Notifications</button>
-                </div>
-
                 <div className="followers-or-following">
                     <button 
-                    onClick={() => setActiveTab("followers")}
-                    className={activeTab == "followers" ? "button-active" : "button-inactive"}>Followers ({followers.length})</button>
+                        onClick={() => setActiveTab("followers")}
+                        className={activeTab === "followers" ? "button-active" : "button-inactive"}
+                    >
+                        Followers ({followers.length})
+                    </button>
                     
                     <button 
-                    onClick={() => setActiveTab("following")}
-                    className={activeTab == "followers" ? "button-inactive" : "button-active"}>Following ({following.length})</button>
+                        onClick={() => setActiveTab("following")}
+                        className={activeTab === "following" ? "button-active" : "button-inactive"}
+                    >
+                        Following ({following.length})
+                    </button>
                 </div>
 
-                
-                <div className="user-list">
+                <div className="search-container">
+                    <input
+                        type="text"
+                        placeholder={`Search ${activeTab}...`}
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="search-input"
+                    />
+                </div>
 
+                {loading ? (
+                    <div className="loading-message">Loading connections...</div>
+                ) : filteredList.length > 0 ? (
+                    <div className="user-list">
+                        {filteredList.map((user) => (
+                            <div key={user.id} className="account">
 
-                    {
-                        (activeTab === "followers" ? followers : following).map((follower) => (
-
-                            <div className="account">
-
-                                <div>
-                                <img className="profile-pic" src={follower.profilePic} />
+                                <div className="account-left" onClick={() => navigate(`/profile/${user.id}`)}>
+                                    <div className="profile-pic"></div>
+                                    <div className="account-info">
+                                        <h3 className="account-username">{user.username}</h3>
+                                        <p className="account-meta">{user.level}L • {user.department}</p>
+                                    </div>
                                 </div>
 
-                                <h3 className="account-username">{follower.username}</h3>
+                                {activeTab === "followers" && (
+                                    <button 
+                                        className="action-button remove-button"
+                                        onClick={() => handleRemoveFollower(user.id)}
+                                    >
+                                        Remove
+                                    </button>
+                                )}
 
-                                <button className={checkFollower(follower.username)}>
-                                    {checkFollower(follower.username) == "not-following" ? "Follow" : "Unfollow"}
-                                </button>
+                                {activeTab === "following" && (
+                                    <button 
+                                        className="action-button unfollow-button"
+                                        onClick={() => handleUnfollow(user.id)}
+                                    >
+                                        Unfollow
+                                    </button>
+                                )}
 
                             </div>
-
-                        ))
-                    }
-
-
-
-                </div>
-
-
-
-                
-
-
+                        ))}
+                    </div>
+                ) : (
+                    <div className="empty-state">
+                        <p>No {activeTab} found</p>
+                    </div>
+                )}
 
             </div>
         </>
     )
-
 }
 
 export default Followers;
-
