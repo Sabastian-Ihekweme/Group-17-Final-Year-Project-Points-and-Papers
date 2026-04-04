@@ -5,25 +5,38 @@ const AuthContext = createContext();
 
 export const AuthContextProvider = ({children}) => {
     const [session, setSession] = useState(undefined)
-    const [points, setPoints] = useState(0)
+    const [points, setPoints] = useState(0) // ← Default to 0, not undefined
 
     // fetch points whenever session changes
     useEffect(() => {
-        if (session) {
+        if (session?.user?.id) {
             const fetchPoints = async () => {
-                const { data } = await supabase
-                    .from('profiles')
-                    .select('points')
-                    .eq('id', session.user.id)
-                    .single()
+                try {
+                    const { data, error } = await supabase
+                        .from('profiles')
+                        .select('points')
+                        .eq('id', session.user.id)
+                        .single()
 
-                if (data) setPoints(data.points)
+                    if (error) {
+                        console.error('Error fetching points:', error);
+                        setPoints(0);
+                    } else if (data && typeof data.points === 'number') {
+                        setPoints(data.points);
+                    } else {
+                        console.warn('Invalid points data:', data);
+                        setPoints(0);
+                    }
+                } catch (error) {
+                    console.error('Error in fetchPoints:', error);
+                    setPoints(0);
+                }
             }
             fetchPoints()
         } else {
             setPoints(0)
         }
-    }, [session])
+    }, [session?.user?.id])
 
     // persist login on refresh
     useEffect(() => {

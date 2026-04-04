@@ -9,10 +9,18 @@ export const ResourceContextProvider = ({ children }) => {
     const [unlockedResources, setUnlockedResources] = useState([]);
     const [loading, setLoading] = useState(true);
 
-    const pointsMap = {
-        'midterm exam': 20,
-        'final exam': 30,
-        'report/essay': 5
+    // FIXED: Correct points for uploading resources
+    const uploadPointsMap = {
+        'midterm exam': 50,      // ← changed from 20 to 50
+        'final exam': 70,        // ← changed from 30 to 70
+        'report/essay': 20       // ← changed from 5 to 20
+    }
+
+    // FIXED: Unlock costs
+    const unlockPointsMap = {
+        'midterm exam': 30,
+        'final exam': 50,
+        'report/essay': 15
     }
 
     useEffect(() => {
@@ -81,12 +89,16 @@ export const ResourceContextProvider = ({ children }) => {
         }
     };
 
+    // FIXED: Updated unlock logic with proper point costs
     const unlockResource = async (resourceId, resourceType) => {
         try {
-            const pointsCost = pointsMap[resourceType] || 3;
+            const pointsCost = unlockPointsMap[resourceType] || 15;
 
             if (userPoints < pointsCost) {
-                return { success: false, error: `Not enough points. You need ${pointsCost} points but have ${userPoints}` };
+                return { 
+                    success: false, 
+                    error: `You don't have enough points to unlock this resource.\n\nPoints needed: ${pointsCost}\nPoints available: ${userPoints}\n\nShare resources or answer questions to gain points.`
+                };
             }
 
             const { error: unlockError } = await supabase
@@ -222,7 +234,7 @@ export const ResourceContextProvider = ({ children }) => {
         }
     };
 
-    // ← updated to accept parent_id for nested replies
+    // FIXED: Added points for posting answer (+5 points)
     const postAnswer = async (questionId, body, parentId = null) => {
         try {
             const { data, error } = await supabase
@@ -231,12 +243,24 @@ export const ResourceContextProvider = ({ children }) => {
                     question_id: questionId,
                     user_id: session.user.id,
                     body,
-                    parent_id: parentId // ← null for direct answers, answer id for replies
+                    parent_id: parentId
                 })
                 .select()
                 .single();
 
             if (error) throw error;
+
+            // Award +5 points for answering a question
+            const pointsToAdd = 5;
+            const { error: pointsError } = await supabase
+                .from('profiles')
+                .update({ points: userPoints + pointsToAdd })
+                .eq('id', session.user.id);
+
+            if (!pointsError) {
+                setPoints(userPoints + pointsToAdd);
+            }
+
             return { success: true, data };
         } catch (error) {
             console.error('Error posting answer:', error);
@@ -253,6 +277,7 @@ export const ResourceContextProvider = ({ children }) => {
         return upvoteItem({ questionId });
     };
 
+    // FIXED: Added points for getting upvoted (+2 points)
     const upvoteItem = async ({ answerId = null, questionId = null }) => {
         try {
             let query = supabase
@@ -268,12 +293,59 @@ export const ResourceContextProvider = ({ children }) => {
             if (checkError && checkError.code !== 'PGRST116') throw checkError;
 
             if (existingVote) {
+                // Remove upvote - deduct 2 points
                 const { error: deleteError } = await supabase
                     .from('upvotes')
                     .delete()
                     .eq('id', existingVote.id);
 
                 if (deleteError) throw deleteError;
+
+                // Get the answer/question owner to deduct points
+                if (answerId) {
+                    const { data: answer } = await supabase
+                        .from('answers')
+                        .select('user_id')
+                        .eq('id', answerId)
+                        .single();
+                    
+                    if (answer) {
+                        const { data: ownerProfile } = await supabase
+                            .from('profiles')
+                            .select('points')
+                            .eq('id', answer.user_id)
+                            .single();
+                        
+                        if (ownerProfile) {
+                            await supabase
+                                .from('profiles')
+                                .update({ points: Math.max(0, ownerProfile.points - 2) })
+                                .eq('id', answer.user_id);
+                        }
+                    }
+                } else if (questionId) {
+                    const { data: question } = await supabase
+                        .from('questions')
+                        .select('user_id')
+                        .eq('id', questionId)
+                        .single();
+                    
+                    if (question) {
+                        const { data: ownerProfile } = await supabase
+                            .from('profiles')
+                            .select('points')
+                            .eq('id', question.user_id)
+                            .single();
+                        
+                        if (ownerProfile) {
+                            await supabase
+                                .from('profiles')
+                                .update({ points: Math.max(0, ownerProfile.points - 2) })
+                                .eq('id', question.user_id);
+                        }
+                    }
+                }
+
                 return { success: true, upvoted: false };
             } else {
                 const insertData = { user_id: session.user.id };
@@ -285,6 +357,52 @@ export const ResourceContextProvider = ({ children }) => {
                     .insert(insertData);
 
                 if (insertError) throw insertError;
+
+                // Award +2 points to the answer/question owner
+                if (answerId) {
+                    const { data: answer } = await supabase
+                        .from('answers')
+                        .select('user_id')
+                        .eq('id', answerId)
+                        .single();
+                    
+                    if (answer) {
+                        const { data: ownerProfile } = await supabase
+                            .from('profiles')
+                            .select('points')
+                            .eq('id', answer.user_id)
+                            .single();
+                        
+                        if (ownerProfile) {
+                            await supabase
+                                .from('profiles')
+                                .update({ points: ownerProfile.points + 2 })
+                                .eq('id', answer.user_id);
+                        }
+                    }
+                } else if (questionId) {
+                    const { data: question } = await supabase
+                        .from('questions')
+                        .select('user_id')
+                        .eq('id', questionId)
+                        .single();
+                    
+                    if (question) {
+                        const { data: ownerProfile } = await supabase
+                            .from('profiles')
+                            .select('points')
+                            .eq('id', question.user_id)
+                            .single();
+                        
+                        if (ownerProfile) {
+                            await supabase
+                                .from('profiles')
+                                .update({ points: ownerProfile.points + 2 })
+                                .eq('id', question.user_id);
+                        }
+                    }
+                }
+
                 return { success: true, upvoted: true };
             }
         } catch (error) {
@@ -372,6 +490,7 @@ export const ResourceContextProvider = ({ children }) => {
         }
     };
 
+    // FIXED: Updated upload points to use correct values
     const uploadResource = async ({ title, description, courseCode, year, instructor, resourceType, files, department }) => {
 
         const { data: existingByCombination } = await supabase
@@ -429,7 +548,8 @@ export const ResourceContextProvider = ({ children }) => {
             }
         }
 
-        const pointsToAdd = pointsMap[resourceType] || 3;
+        // Use uploadPointsMap instead of pointsMap
+        const pointsToAdd = uploadPointsMap[resourceType] || 20;
         const { error: pointsError } = await supabase
             .from('profiles').update({ points: userPoints + pointsToAdd }).eq('id', session.user.id);
 
@@ -441,7 +561,7 @@ export const ResourceContextProvider = ({ children }) => {
     const value = {
         uploadResource, searchResources, unlockResource, fetchAllResources,
         fetchQuestions, postQuestion, postAnswer,
-        upvoteAnswer, upvoteQuestion, // ← added upvoteQuestion
+        upvoteAnswer, upvoteQuestion,
         deleteQuestion, deleteAnswer,
         followUser, unfollowUser, checkIfFollowing,
         unlockedResources, loading
