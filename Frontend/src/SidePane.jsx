@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Upload, User, FileText, Users, Bell, Menu, X } from 'lucide-react';
 import { NavLink } from "react-router-dom";
+import { UserAuth } from "./context/AuthContext";
 import './styles/SidePane.css';
 
 function SidePane() {
 
+  const { unreadNotifications } = UserAuth();
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
   const [isOpen, setIsOpen] = useState(false);
 
@@ -15,7 +17,6 @@ function SidePane() {
 
         window.addEventListener('resize', handleResize);
 
-        // Cleanup listener on unmount
         return () => window.removeEventListener('resize', handleResize);
     }, []);
 
@@ -27,7 +28,7 @@ function SidePane() {
     { icon: User, label: 'Profile', color: 'gray', nav: '/my-profile'},
     { icon: FileText, label: 'My Contributions', color: 'gray', nav: '/my-contributions'},
     { icon: Users, label: 'Followers', color: 'gray', nav: '/followers'},
-    { icon: Bell, label: 'Notifications', color: 'gray', nav: '/notifications'}
+    { icon: Bell, label: 'Notifications', color: 'gray', nav: '/notifications', badge: unreadNotifications}
   ];
 
   return (
@@ -70,7 +71,12 @@ function SidePane() {
               >
                 <button className="menu-item">
                   <Icon className={`menu-icon ${item.color}`} />
-                  <span className="menu-label">{item.label}</span>
+                  <span className="menu-label">
+                    {item.label}
+                    {item.badge > 0 && (
+                      <span className="notification-badge">{item.badge}</span>
+                    )}
+                  </span>
                 </button>
               </NavLink>
             );

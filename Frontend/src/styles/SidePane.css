@@ -33,6 +33,29 @@
           transition: opacity 0.3s;
         }
 
+.notification-badge {
+    position: absolute;
+    margin-left: 97px;
+    background-color: #FF6B6B;
+    color: white;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: bold;
+    top: 10%;
+    transform: translateY(-50%);
+}
+
+.menu-label {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+}
+
         .side-pane {
           position: fixed;
           top: 0;

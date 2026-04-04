@@ -8,7 +8,7 @@ import { UserAuth } from "./context/AuthContext";
 
 function Header() {
 
-    const { session, signOut, points } = UserAuth() // ← added points
+    const { session, signOut, points } = UserAuth()
     const navigate = useNavigate();
 
     const [profile, setProfile] = useState(null)
@@ -53,7 +53,7 @@ function Header() {
             </div>
 
             <div className="points-and-profile">
-                <p className="points">Points: <span>{points || 0}</span></p> {/* ← fallback to 0 if undefined */}
+                <p className="points">Points: <span>{points || 0}</span></p>
                 <p onClick={handleSignOut} className="sign-out">Sign Out</p>
             </div>
         </div>

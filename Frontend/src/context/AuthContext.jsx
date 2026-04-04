@@ -5,7 +5,8 @@ const AuthContext = createContext();
 
 export const AuthContextProvider = ({children}) => {
     const [session, setSession] = useState(undefined)
-    const [points, setPoints] = useState(0) // ← Default to 0, not undefined
+    const [points, setPoints] = useState(0)
+    const [unreadNotifications, setUnreadNotifications] = useState(0)
 
     // fetch points whenever session changes
     useEffect(() => {
@@ -33,10 +34,32 @@ export const AuthContextProvider = ({children}) => {
                 }
             }
             fetchPoints()
+
+            // Also fetch unread notification count
+            fetchUnreadNotifications()
         } else {
             setPoints(0)
+            setUnreadNotifications(0)
         }
     }, [session?.user?.id])
+
+    const fetchUnreadNotifications = async () => {
+        try {
+            // Count new notifications based on database entries
+            // For now, we'll count followers + upvotes + answers created in last 24 hours
+            const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+            
+            const { count: followerCount } = await supabase
+                .from('follows')
+                .select('*', { count: 'exact', head: true })
+                .eq('following_id', session.user.id)
+                .gte('created_at', oneDayAgo);
+
+            setUnreadNotifications(followerCount || 0);
+        } catch (error) {
+            console.error('Error fetching unread notifications:', error);
+        }
+    };
 
     // persist login on refresh
     useEffect(() => {
@@ -48,7 +71,7 @@ export const AuthContextProvider = ({children}) => {
             setSession(session)
         })
 
-        return () => subscription.unsubscribe() // ← cleanup
+        return () => subscription.unsubscribe()
     }, [])
 
     // Sign Up
@@ -94,14 +117,14 @@ export const AuthContextProvider = ({children}) => {
 
     // Sign Out
     const signOut = async () => {
-        const { error } = await supabase.auth.signOut() // ← added await
+        const { error } = await supabase.auth.signOut()
         if(error) {
             console.error("there was an error: ", error);
         }
     }
 
     return (
-        <AuthContext.Provider value={{ session, signUpNewUser, signInUser, signOut, points, setPoints }}>
+        <AuthContext.Provider value={{ session, signUpNewUser, signInUser, signOut, points, setPoints, unreadNotifications, setUnreadNotifications }}>
             {children}
         </AuthContext.Provider>
     )
