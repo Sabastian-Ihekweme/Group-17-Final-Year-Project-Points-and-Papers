@@ -65,7 +65,7 @@ function Notifications () {
                 const answerIds = answersData.map(a => a.id);
                 const { data: upvotesData } = await supabase
                     .from('upvotes')
-                    .select('answer_id, created_at, profiles!user_id(username, id)')
+                    .select('id, created_at, user_id, profiles!user_id(username, id)')
                     .in('answer_id', answerIds)
                     .neq('user_id', userId)
                     .order('created_at', { ascending: false });
@@ -92,9 +92,10 @@ function Notifications () {
                 const questionIds = questionsData.map(q => q.id);
                 const { data: answersToQuestionsData } = await supabase
                     .from('answers')
-                    .select('id, created_at, questions(title, id, resource_id), profiles!user_id(username, id)')
+                    .select('id, created_at, questions(title, id, resource_id, file_type:resources(file_type)), profiles!user_id(username, id), user_id')
                     .in('question_id', questionIds)
                     .eq('parent_id', null)
+                    .neq('user_id', userId)
                     .order('created_at', { ascending: false });
 
                 answerNotifications = (answersToQuestionsData || []).map(item => ({
@@ -102,7 +103,7 @@ function Notifications () {
                     profile: item.profiles.username,
                     profileId: item.profiles.id,
                     resource: item.questions.title,
-                    resourceId: item.questions.resource_id,
+                    resourceId: item.questions.id,
                     timestamp: new Date(item.created_at).getTime(),
                     userId: item.user_id
                 }));
@@ -111,7 +112,7 @@ function Notifications () {
             // 4. Get replies to user's answers
             const { data: repliesData } = await supabase
                 .from('answers')
-                .select('id, created_at, questions(title, id, resource_id), profiles!user_id(username, id)')
+                .select('id, created_at, questions(title, id, resource_id), profiles!user_id(username, id), user_id')
                 .eq('parent_id', userId)
                 .order('created_at', { ascending: false });
 
@@ -120,7 +121,7 @@ function Notifications () {
                 profile: item.profiles.username,
                 profileId: item.profiles.id,
                 resource: item.questions.title,
-                resourceId: item.questions.resource_id,
+                resourceId: item.questions.id,
                 timestamp: new Date(item.created_at).getTime(),
                 userId: item.user_id
             }));
@@ -234,9 +235,8 @@ function Notifications () {
 
     function handleNotificationAction(notification) {
         if (notification.type === "follower") {
-            navigate(`/profile/${notification.userId}`);
-        } else if (notification.type === "upload" || notification.type === "question" || notification.type === "reply" || notification.type === "upvote") {
-            // Navigate to resource details page
+            navigate(`/profile/${notification.profileId}`);
+        } else if (notification.resourceId) {
             const resourceType = notification.fileType === 'pdf' ? 'pdf' : 'image';
             navigate(`/resource-details-${resourceType}/${notification.resourceId}`);
         }
@@ -315,8 +315,6 @@ function Notifications () {
                                         </div>
 
                                     </div>
-
-
 
                                 </div>
 

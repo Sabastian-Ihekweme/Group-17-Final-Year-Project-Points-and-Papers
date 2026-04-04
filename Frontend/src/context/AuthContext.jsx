@@ -35,7 +35,7 @@ export const AuthContextProvider = ({children}) => {
             }
             fetchPoints()
 
-            // Also fetch unread notification count
+            // Fetch unread notification count (followers in last 24 hours)
             fetchUnreadNotifications()
         } else {
             setPoints(0)
@@ -45,17 +45,28 @@ export const AuthContextProvider = ({children}) => {
 
     const fetchUnreadNotifications = async () => {
         try {
-            // Count new notifications based on database entries
-            // For now, we'll count followers + upvotes + answers created in last 24 hours
+            // Count followers + upvotes + answers from last 24 hours
             const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
             
-            const { count: followerCount } = await supabase
+            const { count: followerCount = 0 } = await supabase
                 .from('follows')
                 .select('*', { count: 'exact', head: true })
                 .eq('following_id', session.user.id)
                 .gte('created_at', oneDayAgo);
 
-            setUnreadNotifications(followerCount || 0);
+            const { count: answerCount = 0 } = await supabase
+                .from('answers')
+                .select('*', { count: 'exact', head: true })
+                .in('question_id', 
+                    (await supabase
+                        .from('questions')
+                        .select('id')
+                        .eq('user_id', session.user.id)).data?.map(q => q.id) || []
+                )
+                .gte('created_at', oneDayAgo)
+                .neq('user_id', session.user.id);
+
+            setUnreadNotifications((followerCount || 0) + (answerCount || 0));
         } catch (error) {
             console.error('Error fetching unread notifications:', error);
         }

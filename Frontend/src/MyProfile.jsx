@@ -14,10 +14,10 @@ function MyProfile () {
     const { session } = UserAuth();
 
     const [profile, setProfile] = useState(null)
-    const [totalUploads, setTotalUploads] = useState(0)
-    const [totalUpvotes, setTotalUpvotes] = useState(0)
-    const [totalFollowers, setTotalFollowers] = useState(0)
-    const [totalFollowing, setTotalFollowing] = useState(0)
+    const [totalUploads, setTotalUploads] = useState(null)
+    const [totalUpvotes, setTotalUpvotes] = useState(null)
+    const [totalFollowers, setTotalFollowers] = useState(null)
+    const [totalFollowing, setTotalFollowing] = useState(null)
 
     useEffect(() => {
         const getProfile = async () => {
@@ -101,7 +101,7 @@ function MyProfile () {
                         <div className="icon"><img className="profile-icon" src={upload}/></div>
                         <div className="metrics-info">
                             <span className="metrics-description">Total Uploads</span>
-                            <span className="metrics-value">{totalUploads}</span>
+                            <span className="metrics-value">{totalUploads ?? '—'}</span>
                         </div>
                     </div>
 
@@ -109,7 +109,7 @@ function MyProfile () {
                         <div className="icon"><img className="profile-icon" src={upvote}/></div>
                         <div className="metrics-info">
                             <span className="metrics-description">Total Upvotes</span>
-                            <span className="metrics-value">{totalUpvotes}</span>
+                            <span className="metrics-value">{totalUpvotes ?? '—'}</span>
                         </div>
                     </div>
 
@@ -117,7 +117,7 @@ function MyProfile () {
                         <div className="icon"><img className="profile-icon" src={people}/></div>
                         <div className="metrics-info">
                             <span className="metrics-description">Followers</span>
-                            <span className="metrics-value">{totalFollowers}</span>
+                            <span className="metrics-value">{totalFollowers ?? '—'}</span>
                         </div>
                     </div>
 
@@ -125,7 +125,7 @@ function MyProfile () {
                         <div className="icon"><img className="profile-icon" src={people}/></div>
                         <div className="metrics-info">
                             <span className="metrics-description">Following</span>
-                            <span className="metrics-value">{totalFollowing}</span>
+                            <span className="metrics-value">{totalFollowing ?? '—'}</span>
                         </div>
                     </div>
 
