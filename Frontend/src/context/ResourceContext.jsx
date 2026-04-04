@@ -11,9 +11,9 @@ export const ResourceContextProvider = ({ children }) => {
 
     // FIXED: Correct points for uploading resources
     const uploadPointsMap = {
-        'midterm exam': 50,      // ← changed from 20 to 50
-        'final exam': 70,        // ← changed from 30 to 70
-        'report/essay': 20       // ← changed from 5 to 20
+        'midterm exam': 50,
+        'final exam': 70,
+        'report/essay': 20
     }
 
     // FIXED: Unlock costs
@@ -89,18 +89,35 @@ export const ResourceContextProvider = ({ children }) => {
         }
     };
 
-    // FIXED: Updated unlock logic with proper point costs
+    // FIXED: Fetch fresh points from database before checking
     const unlockResource = async (resourceId, resourceType) => {
         try {
-            const pointsCost = unlockPointsMap[resourceType] || 15;
+            // Fetch current points from database (fresh data)
+            const { data: profileData, error: profileError } = await supabase
+                .from('profiles')
+                .select('points')
+                .eq('id', session.user.id)
+                .single();
 
-            if (userPoints < pointsCost) {
+            if (profileError || !profileData) {
                 return { 
                     success: false, 
-                    error: `You don't have enough points to unlock this resource.\n\nPoints needed: ${pointsCost}\nPoints available: ${userPoints}\n\nShare resources or answer questions to gain points.`
+                    error: 'Failed to fetch your points. Please try again.'
                 };
             }
 
+            const currentPoints = profileData.points || 0;
+            const pointsCost = unlockPointsMap[resourceType] || 15;
+
+            // Check against FRESH points from database, not stale state
+            if (currentPoints < pointsCost) {
+                return { 
+                    success: false, 
+                    error: `You don't have enough points to unlock this resource.\n\nPoints needed: ${pointsCost}\nPoints available: ${currentPoints}\n\nShare resources or answer questions to gain points.`
+                };
+            }
+
+            // Insert unlock record
             const { error: unlockError } = await supabase
                 .from('unlocked_resources')
                 .insert({
@@ -111,15 +128,17 @@ export const ResourceContextProvider = ({ children }) => {
 
             if (unlockError) throw unlockError;
 
+            // Deduct points
             const { error: pointsError } = await supabase
                 .from('profiles')
-                .update({ points: userPoints - pointsCost })
+                .update({ points: currentPoints - pointsCost })
                 .eq('id', session.user.id);
 
             if (pointsError) throw pointsError;
 
+            // Update local state
             setUnlockedResources(prev => [...prev, resourceId]);
-            setPoints(userPoints - pointsCost);
+            setPoints(currentPoints - pointsCost);
 
             return { success: true, pointsDeducted: pointsCost };
         } catch (error) {
@@ -252,13 +271,20 @@ export const ResourceContextProvider = ({ children }) => {
 
             // Award +5 points for answering a question
             const pointsToAdd = 5;
+            const { data: profileData } = await supabase
+                .from('profiles')
+                .select('points')
+                .eq('id', session.user.id)
+                .single();
+
+            const currentPoints = profileData?.points || 0;
             const { error: pointsError } = await supabase
                 .from('profiles')
-                .update({ points: userPoints + pointsToAdd })
+                .update({ points: currentPoints + pointsToAdd })
                 .eq('id', session.user.id);
 
             if (!pointsError) {
-                setPoints(userPoints + pointsToAdd);
+                setPoints(currentPoints + pointsToAdd);
             }
 
             return { success: true, data };
@@ -548,12 +574,20 @@ export const ResourceContextProvider = ({ children }) => {
             }
         }
 
-        // Use uploadPointsMap instead of pointsMap
-        const pointsToAdd = uploadPointsMap[resourceType] || 20;
-        const { error: pointsError } = await supabase
-            .from('profiles').update({ points: userPoints + pointsToAdd }).eq('id', session.user.id);
+        // Fetch fresh points for upload
+        const { data: profileData } = await supabase
+            .from('profiles')
+            .select('points')
+            .eq('id', session.user.id)
+            .single();
 
-        if (!pointsError) setPoints(userPoints + pointsToAdd);
+        const currentPoints = profileData?.points || 0;
+        const pointsToAdd = uploadPointsMap[resourceType] || 20;
+        
+        const { error: pointsError } = await supabase
+            .from('profiles').update({ points: currentPoints + pointsToAdd }).eq('id', session.user.id);
+
+        if (!pointsError) setPoints(currentPoints + pointsToAdd);
 
         return { success: true, data: resourceData, pointsEarned: pointsToAdd, filesUploaded: uploadedFiles.length };
     };
