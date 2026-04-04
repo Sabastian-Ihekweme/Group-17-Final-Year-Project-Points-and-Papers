@@ -11,6 +11,11 @@
     justify-content: center;
 }
 
+p, strong, label {
+    background-color: transparent !important;
+    color: black
+}
+
 
 .generate-ai-answer-container h1 {
   font-family: Montserrat; /* Heading */

@@ -164,7 +164,7 @@ function ResourceUpload() {
                             <input
                                 name="resource-year"
                                 className="resource-year"
-                                placeholder="e.g. 2025-2026"
+                                placeholder="e.g. 2026"
                                 onChange={(e) => setYear(e.target.value)}
                             />
                         </div>
@@ -180,7 +180,7 @@ function ResourceUpload() {
                         </div>
 
                         <div className="resource-info-box">
-                            <label htmlFor="resource-description">Description</label>
+                            <label htmlFor="resource-description">Description (Optional) </label>
                             <textarea
                                 name="resource-description"
                                 className="resource-description"
@@ -218,7 +218,7 @@ function ResourceUpload() {
                             <p className="main-text">
                                 {isDragging ? 'Drop files here' : 'Drag & drop your files here, or click to browse'}
                             </p>
-                            <p className="sub-text">(Max file size: 20MB, accepted formats: PDF, JPG, PNG)</p>
+                            <p className="sub-text">(Max file size: 50MB, accepted formats: PDF, JPG, PNG)</p>
                         </div>
 
                         {files.length > 0 && (

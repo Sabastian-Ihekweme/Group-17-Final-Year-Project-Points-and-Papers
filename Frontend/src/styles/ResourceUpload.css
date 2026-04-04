@@ -12,8 +12,9 @@
     text-align: center;
 }
 
-p, strong {
+p, strong, label {
     background-color: transparent !important;
+    color: black
 }
 
 

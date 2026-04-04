@@ -20,6 +20,11 @@
     overflow-y: auto;
 }
 
+p, strong, label {
+    background-color: transparent !important;
+    color: black
+}
+
 .contribution {
   width: 342px; 
   height: 206px; 

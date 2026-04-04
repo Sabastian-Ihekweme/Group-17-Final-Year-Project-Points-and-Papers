@@ -16,6 +16,11 @@
           transition: background-color 0.2s;
         }
 
+        p, strong, label {
+    background-color: transparent !important;
+    color: black
+}
+
         .hamburger-btn:hover {
           background-color: #f9fafb;
         }

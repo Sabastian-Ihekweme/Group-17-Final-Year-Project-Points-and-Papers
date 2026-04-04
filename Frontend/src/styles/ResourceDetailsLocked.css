@@ -18,6 +18,11 @@
   margin-bottom: 4px;
 }
 
+p, strong, label {
+    background-color: transparent !important;
+    color: black
+}
+
 .resource-details-locked h2 {
       width: 290px; 
   font-family: Montserrat; /* Heading */

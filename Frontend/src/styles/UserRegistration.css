@@ -22,6 +22,11 @@
   width: 100%;
 }
 
+p, strong, label {
+    background-color: transparent !important;
+    color: black
+}
+
 .user-registration p {
   margin-top: 10px;
   margin-bottom: 30px;

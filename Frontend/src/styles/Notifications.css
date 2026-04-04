@@ -16,6 +16,11 @@
   margin-bottom: 25px;
 }
 
+p, strong, label {
+    background-color: transparent !important;
+    color: black
+}
+
 .notification-container {
   width: 352px; 
   min-height: 140px; 

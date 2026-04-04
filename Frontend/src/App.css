@@ -5,8 +5,14 @@
   text-align: center;
 }
 
-p {
+input {
+  color: black;
+  background-color: transparent;
+}
+
+p, label {
   background-color: transparent !important;
+  color: black;
 }
 
 body {

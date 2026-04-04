@@ -22,6 +22,11 @@
     text-align: center;
 }
 
+p, strong, label {
+    background-color: transparent !important;
+    color: black
+}
+
 /* ====================================== */
 /* USER INFORMATION SECTION */
 /* ====================================== */

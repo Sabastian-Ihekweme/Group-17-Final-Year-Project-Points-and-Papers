@@ -12,6 +12,11 @@
    gap: 2px;
 }
 
+p, strong, label {
+    background-color: transparent !important;
+    color: black
+}
+
 
 .page-title h1 {
  font-family: Montserrat; /* Heading */

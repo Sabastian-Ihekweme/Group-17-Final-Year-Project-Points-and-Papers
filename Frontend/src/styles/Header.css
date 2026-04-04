@@ -57,6 +57,11 @@ body, html {
     gap: 10px;
 }
 
+p, strong, label {
+    background-color: transparent !important;
+    color: black
+}
+
 
 
 .points {

@@ -260,7 +260,7 @@ function ResourceDetailsImage() {
     const goToPrevious = () => setCurrentIndex(prev => prev === 0 ? resources.length - 1 : prev - 1);
     const goToNext = () => setCurrentIndex(prev => prev === resources.length - 1 ? 0 : prev + 1);
 
-    // ← helper to recursively update answer upvotes
+    // Helper to recursively update answer upvotes
     const updateAnswerUpvote = (answers, answerId) => {
         return answers.map(a => {
             if (a.id === answerId) {
@@ -301,32 +301,32 @@ function ResourceDetailsImage() {
         }
     };
 
-const handleUpvoteAnswer = async (answerId) => {
-    // update UI instantly
-    setQuestions(prev => prev.map(q => ({
-        ...q,
-        answers: updateAnswerUpvote(q.answers, answerId)
-    })));
-
-    // sync with server in background
-    await upvoteAnswer(answerId);
-}
-
-const handleUpvoteQuestion = async (questionId) => {
-    // update UI instantly
-    setQuestions(prev => prev.map(q => {
-        if (q.id !== questionId) return q;
-        const isUpvoted = q.isUpvoted;
-        return {
+    const handleUpvoteAnswer = async (answerId) => {
+        // update UI instantly
+        setQuestions(prev => prev.map(q => ({
             ...q,
-            isUpvoted: !isUpvoted,
-            upvoteCount: isUpvoted ? q.upvoteCount - 1 : q.upvoteCount + 1
-        };
-    }));
+            answers: updateAnswerUpvote(q.answers, answerId)
+        })));
 
-    // sync with server in background
-    await upvoteQuestion(questionId);
-}
+        // sync with server in background
+        await upvoteAnswer(answerId);
+    }
+
+    const handleUpvoteQuestion = async (questionId) => {
+        // update UI instantly
+        setQuestions(prev => prev.map(q => {
+            if (q.id !== questionId) return q;
+            const isUpvoted = q.isUpvoted;
+            return {
+                ...q,
+                isUpvoted: !isUpvoted,
+                upvoteCount: isUpvoted ? q.upvoteCount - 1 : q.upvoteCount + 1
+            };
+        }));
+
+        // sync with server in background
+        await upvoteQuestion(questionId);
+    }
 
     const handleDeleteQuestion = async (questionId) => {
         if (!window.confirm('Are you sure you want to delete this question?')) return;
@@ -340,6 +340,13 @@ const handleUpvoteQuestion = async (questionId) => {
         const result = await deleteAnswer(answerId);
         if (result.success) refreshQuestions();
         else alert('Failed to delete answer: ' + result.error);
+    };
+
+    // Open current image in new browser tab
+    const handleViewResource = () => {
+        if (resources.length > 0) {
+            window.open(resources[currentIndex], '_blank');
+        }
     };
 
     const downloadImagesAsZip = async () => {
@@ -417,7 +424,7 @@ const handleUpvoteQuestion = async (questionId) => {
                             </div>
                         </div>
                         <div className="download-buttons">
-                            <button className="view-resource">View Resource</button>
+                            <button onClick={handleViewResource} className="view-resource">View Resource</button>
                             <button onClick={downloadImagesAsZip} className="download-resource">Download</button>
                         </div>
                         <div className="comments-section">

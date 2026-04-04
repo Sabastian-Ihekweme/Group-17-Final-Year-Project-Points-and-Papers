@@ -149,6 +149,11 @@
   flex-direction: column;
 }
 
+p, strong, label {
+    background-color: transparent !important;
+    color: black
+}
+
 
 
 @media (min-width: 764px) {

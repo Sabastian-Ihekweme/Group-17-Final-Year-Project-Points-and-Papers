@@ -261,6 +261,11 @@
     grid-column: 1 / -1;
 }
 
+p, strong, label {
+    background-color: transparent !important;
+    color: black
+}
+
 .no-results p {
     font-family: Open Sans;
     font-size: 16px;

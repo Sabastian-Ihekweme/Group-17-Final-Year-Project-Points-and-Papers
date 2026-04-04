@@ -18,6 +18,11 @@ body {
     align-items: center;
 }
 
+p, strong, label {
+    background-color: transparent !important;
+    color: black
+}
+
 .login-btn {
   width: 187px; 
   height: 40px; 
