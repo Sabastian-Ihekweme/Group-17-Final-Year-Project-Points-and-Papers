@@ -35,7 +35,7 @@ const Answer = ({ answer, session, navigate, onUpvote, onDelete, onReply, replyi
                         <button
                             className={`action-button ${isUpvoted ? 'upvoted' : ''}`}
                             onClick={() => onUpvote(answer.id)}
-                            style={{ color: isUpvoted ? '#1F9EF9' : 'inherit' }}
+                            style={{ color: isUpvoted ? '#000000' : 'inherit' }}
                         >
                             <ThumbsUp style={{ width: '0.875rem', height: '0.875rem' }} />
                             <span>{upvoteCount}</span>
@@ -122,7 +122,7 @@ const Question = ({ question, session, navigate, onUpvoteQuestion, onUpvoteAnswe
                         <button
                             className={`action-button ${isUpvoted ? 'upvoted' : ''}`}
                             onClick={() => onUpvoteQuestion(question.id)}
-                            style={{ color: isUpvoted ? '#1F9EF9' : 'inherit' }}
+                            style={{ color: isUpvoted ? '#000000' : 'inherit' }}
                         >
                             <ThumbsUp style={{ width: '0.875rem', height: '0.875rem' }} />
                             <span>{upvoteCount}</span>
