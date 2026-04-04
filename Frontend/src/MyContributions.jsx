@@ -1,79 +1,71 @@
-import {useState} from "react";
+import {useState, useEffect} from "react";
 import Header from "./Header";
 import "./styles/MyContributions.css";
-
-
+import { UserAuth } from "./context/AuthContext";
+import { useNavigate } from "react-router-dom";
+import supabase from "./config/supabaseClient";
 
 function MyContributions() {
+    const { session } = UserAuth();
+    const navigate = useNavigate();
+    const [contributions, setContributions] = useState([]);
+    const [loading, setLoading] = useState(true);
 
-        const contributions = [
-                {
-                    title: "Advanced Calculus Lecture Notes",
-                    type: "Report/Essay",
-                    date: "2023-11-01",
-                    points: 20
-                },
-                {
-                    title: "Introduction to Quantum Mechanics",
-                    type: "Presentation",
-                    date: "2023-09-15",
-                    points: 35
-                },
-                {
-                    title: "Data Structures and Algorithms Cheat Sheet",
-                    type: "Study Guide",
-                    date: "2024-01-22",
-                    points: 15
-                },
-                {
-                    title: "World War II Timeline Analysis",
-                    type: "Report/Essay",
-                    date: "2023-10-08",
-                    points: 25
-                },
-                {
-                    title: "Organic Chemistry Reaction Mechanisms",
-                    type: "Flashcards",
-                    date: "2024-02-14",
-                    points: 30
-                },
-                {
-                    title: "Macroeconomics Supply & Demand Models",
-                    type: "Presentation",
-                    date: "2023-12-03",
-                    points: 40
-                },
-                {
-                    title: "Shakespeare's Hamlet — Thematic Breakdown",
-                    type: "Report/Essay",
-                    date: "2024-03-01",
-                    points: 18
-                },
-                {
-                    title: "Linear Algebra Problem Sets (Week 1–6)",
-                    type: "Practice Problems",
-                    date: "2023-08-30",
-                    points: 50
-                },
-                {
-                    title: "Human Anatomy Diagram Notes",
-                    type: "Study Guide",
-                    date: "2024-01-05",
-                    points: 22
-                },
-                {
-                    title: "Python for Data Science — Beginner's Guide",
-                    type: "Tutorial",
-                    date: "2023-07-19",
-                    points: 45
-                },
-                {
-                    title: "Environmental Impact of Renewable Energy",
-                    type: "Report/Essay",
-                    date: "2024-02-28",
-                    points: 33
-                }
-        ];
+    const uploadPointsMap = {
+        'midterm exam': 50,
+        'final exam': 70,
+        'report/essay': 20
+    };
+
+    useEffect(() => {
+        if (session?.user?.id) {
+            fetchUserContributions();
+        }
+    }, [session?.user?.id]);
+
+    const fetchUserContributions = async () => {
+        try {
+            setLoading(true);
+            const { data, error } = await supabase
+                .from('resources')
+                .select('*')
+                .eq('user_id', session.user.id)
+                .order('created_at', { ascending: false });
+
+            if (error) throw error;
+
+            const formattedContributions = data.map(resource => ({
+                id: resource.id,
+                title: resource.title,
+                type: resource.resource_type,
+                date: new Date(resource.created_at).toLocaleDateString(),
+                points: uploadPointsMap[resource.resource_type] || 20,
+                file_type: resource.file_type
+            }));
+
+            setContributions(formattedContributions);
+        } catch (error) {
+            console.error('Error fetching contributions:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleViewDetails = (contribution) => {
+        navigate(`/resource-details-${contribution.file_type === 'pdf' ? 'pdf' : 'image'}/${contribution.id}`);
+    };
+
+    if (loading) {
+        return <>
+            <Header />
+            <div className="my-contributions-div">
+                <h1>My Contributions</h1>
+                <div className="my-contributions">
+                    <p>Loading...</p>
+                </div>
+            </div>
+        </>
+    }
 
     return <>
 
@@ -88,7 +80,7 @@ function MyContributions() {
             {
                 contributions.map((contribution) => (
 
-                    <div className="contribution">
+                    <div className="contribution" key={contribution.id}>
                         <h3 className="contribution-title">
                             {contribution.title}
                         </h3>
@@ -99,7 +91,7 @@ function MyContributions() {
 
                         <p className="contribution-points">Points Awarded: <span className="value">{contribution.points}</span></p>
 
-                        <button className="view-contribution-details">View Details</button>
+                        <button className="view-contribution-details" onClick={() => handleViewDetails(contribution)}>View Details</button>
 
 
                     </div>
