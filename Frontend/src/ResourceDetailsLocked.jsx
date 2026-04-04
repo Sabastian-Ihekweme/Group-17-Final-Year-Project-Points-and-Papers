@@ -11,18 +11,11 @@ function ResourceDetailsLocked() {
     const { id } = useParams();
     const navigate = useNavigate();
     const { userPoints } = UserAuth();
-    const { unlockResource, fetchAllResources } = UseResource();
+    const { unlockResource, fetchAllResources, unlockPointsMap } = UseResource(); // ← Get unlockPointsMap from context
     
     const [resource, setResource] = useState(null);
     const [loading, setLoading] = useState(true);
     const [unlocking, setUnlocking] = useState(false);
-
-    // Unlock points map
-    const unlockPointsMap = {
-        'midterm exam': 30,
-        'final exam': 50,
-        'report/essay': 15
-    };
 
     useEffect(() => {
         const loadResource = async () => {
@@ -89,6 +82,7 @@ function ResourceDetailsLocked() {
         );
     }
 
+    // Get actual unlock cost from context
     const pointsCost = unlockPointsMap[resource.resource_type] || 15;
     const hasEnoughPoints = userPoints >= pointsCost;
 

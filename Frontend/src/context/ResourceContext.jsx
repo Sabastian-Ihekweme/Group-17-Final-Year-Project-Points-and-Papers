@@ -9,14 +9,14 @@ export const ResourceContextProvider = ({ children }) => {
     const [unlockedResources, setUnlockedResources] = useState([]);
     const [loading, setLoading] = useState(true);
 
-    // FIXED: Correct points for uploading resources
+    // Upload points for sharing resources
     const uploadPointsMap = {
         'midterm exam': 50,
         'final exam': 70,
         'report/essay': 20
     }
 
-    // FIXED: Unlock costs
+    // Unlock points costs
     const unlockPointsMap = {
         'midterm exam': 30,
         'final exam': 50,
@@ -89,7 +89,7 @@ export const ResourceContextProvider = ({ children }) => {
         }
     };
 
-    // FIXED: Fetch fresh points from database before checking
+    // Fetch fresh points from database before checking
     const unlockResource = async (resourceId, resourceType) => {
         try {
             // Fetch current points from database (fresh data)
@@ -147,7 +147,7 @@ export const ResourceContextProvider = ({ children }) => {
         }
     };
 
-    // ← recursively builds nested replies
+    // Recursively builds nested replies
     const buildAnswerTree = (answers, parentId = null) => {
         return answers
             .filter(a => a.parent_id === parentId)
@@ -157,7 +157,7 @@ export const ResourceContextProvider = ({ children }) => {
             }));
     };
 
-    // ← updated to fetch nested replies + question upvotes + user upvote status
+    // Fetch nested replies + question upvotes + user upvote status
     const fetchQuestions = async (resourceId) => {
         try {
             // fetch questions with their upvote counts
@@ -253,7 +253,7 @@ export const ResourceContextProvider = ({ children }) => {
         }
     };
 
-    // FIXED: Added points for posting answer (+5 points)
+    // Added points for posting answer (+5 points)
     const postAnswer = async (questionId, body, parentId = null) => {
         try {
             const { data, error } = await supabase
@@ -294,7 +294,7 @@ export const ResourceContextProvider = ({ children }) => {
         }
     };
 
-    // ← updated to support upvoting both answers and questions
+    // Updated to support upvoting both answers and questions
     const upvoteAnswer = async (answerId) => {
         return upvoteItem({ answerId });
     };
@@ -303,7 +303,7 @@ export const ResourceContextProvider = ({ children }) => {
         return upvoteItem({ questionId });
     };
 
-    // FIXED: Added points for getting upvoted (+2 points)
+    // Added points for getting upvoted (+2 points)
     const upvoteItem = async ({ answerId = null, questionId = null }) => {
         try {
             let query = supabase
@@ -516,7 +516,7 @@ export const ResourceContextProvider = ({ children }) => {
         }
     };
 
-    // FIXED: Updated upload points to use correct values
+    // Export unlockPointsMap so it can be used in components
     const uploadResource = async ({ title, description, courseCode, year, instructor, resourceType, files, department }) => {
 
         const { data: existingByCombination } = await supabase
@@ -598,7 +598,8 @@ export const ResourceContextProvider = ({ children }) => {
         upvoteAnswer, upvoteQuestion,
         deleteQuestion, deleteAnswer,
         followUser, unfollowUser, checkIfFollowing,
-        unlockedResources, loading
+        unlockedResources, loading,
+        unlockPointsMap  // ← Export this so components can use it
     };
 
     return (

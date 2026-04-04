@@ -89,11 +89,11 @@ function SearchResources () {
         let points = 3;
 
         if (type === 'report/essay') {
-            points = 5
+            points = 15
         } else if (type === 'midterm exam') {
-            points = 20;
-        } else if (type === 'final exam') {
             points = 30;
+        } else if (type === 'final exam') {
+            points = 50;
         } else {
             points = 3;
         }
