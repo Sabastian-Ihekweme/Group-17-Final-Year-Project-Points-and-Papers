@@ -20,6 +20,18 @@ textarea {
   object-fit: contain;
 }
 
+.action-button:focus {
+    outline: none;
+}
+
+.action-button:focus-visible {
+    outline: none;
+}
+
+button, span, svg {
+  color: black;
+}
+
        .carousel-container {
           display: flex;
           align-items: center;

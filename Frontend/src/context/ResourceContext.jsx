@@ -15,7 +15,6 @@ export const ResourceContextProvider = ({ children }) => {
         'report/essay': 5
     }
 
-    // Fetch unlocked resources for current user on mount
     useEffect(() => {
         if (session?.user?.id) {
             fetchUnlockedResources();
@@ -31,7 +30,6 @@ export const ResourceContextProvider = ({ children }) => {
                 .eq('user_id', session.user.id);
 
             if (error) throw error;
-            
             setUnlockedResources(data?.map(item => item.resource_id) || []);
         } catch (error) {
             console.error('Error fetching unlocked resources:', error);
@@ -40,15 +38,11 @@ export const ResourceContextProvider = ({ children }) => {
         }
     };
 
-    // Fetch all resources with uploader profile
     const fetchAllResources = async () => {
         try {
             const { data, error } = await supabase
                 .from('resources')
-                .select(`
-                    *,
-                    profiles(username)
-                `)
+                .select(`*, profiles(username)`)
                 .order('created_at', { ascending: false });
 
             if (error) throw error;
@@ -59,42 +53,26 @@ export const ResourceContextProvider = ({ children }) => {
         }
     };
 
-    // Search and filter resources
     const searchResources = async (filters = {}) => {
         try {
             let query = supabase
                 .from('resources')
-                .select(`
-                    *,
-                    profiles(username)
-                `);
+                .select(`*, profiles(username)`);
 
-            // Apply filters
             if (filters.searchQuery) {
                 query = query.or(
                     `title.ilike.%${filters.searchQuery}%,course_code.ilike.%${filters.searchQuery}%,instructor.ilike.%${filters.searchQuery}%`
                 );
             }
-
-            if (filters.year) {
-                query = query.eq('year', filters.year);
-            }
-
-            if (filters.instructor) {
-                query = query.ilike('instructor', `%${filters.instructor}%`);
-            }
-
-            if (filters.department) {
-                query = query.eq('department', filters.department);
-            }
-
+            if (filters.year) query = query.eq('year', filters.year);
+            if (filters.instructor) query = query.ilike('instructor', `%${filters.instructor}%`);
+            if (filters.department) query = query.eq('department', filters.department);
             if (filters.level) {
                 const levelNum = parseInt(filters.level);
                 query = query.gte('course_code', `${levelNum}`).lt('course_code', `${levelNum + 100}`);
             }
 
             const { data, error } = await query.order('created_at', { ascending: false });
-
             if (error) throw error;
             return data || [];
         } catch (error) {
@@ -103,7 +81,6 @@ export const ResourceContextProvider = ({ children }) => {
         }
     };
 
-    // Unlock a resource
     const unlockResource = async (resourceId, resourceType) => {
         try {
             const pointsCost = pointsMap[resourceType] || 3;
@@ -139,10 +116,21 @@ export const ResourceContextProvider = ({ children }) => {
         }
     };
 
-    // Fetch questions for a resource
+    // ← recursively builds nested replies
+    const buildAnswerTree = (answers, parentId = null) => {
+        return answers
+            .filter(a => a.parent_id === parentId)
+            .map(a => ({
+                ...a,
+                replies: buildAnswerTree(answers, a.id)
+            }));
+    };
+
+    // ← updated to fetch nested replies + question upvotes + user upvote status
     const fetchQuestions = async (resourceId) => {
         try {
-            const { data, error } = await supabase
+            // fetch questions with their upvote counts
+            const { data: questions, error: questionsError } = await supabase
                 .from('questions')
                 .select(`
                     id,
@@ -151,27 +139,68 @@ export const ResourceContextProvider = ({ children }) => {
                     body,
                     created_at,
                     profiles(username),
-                    answers(
-                        id,
-                        user_id,
-                        body,
-                        created_at,
-                        profiles(username),
-                        upvotes:upvotes(count)
-                    )
+                    upvotes(count)
                 `)
                 .eq('resource_id', resourceId)
                 .order('created_at', { ascending: false });
 
-            if (error) throw error;
-            return data || [];
+            if (questionsError) throw questionsError;
+
+            // fetch ALL answers for this resource's questions (flat list)
+            const questionIds = questions.map(q => q.id);
+
+            if (questionIds.length === 0) return [];
+
+            const { data: answers, error: answersError } = await supabase
+                .from('answers')
+                .select(`
+                    id,
+                    user_id,
+                    question_id,
+                    parent_id,
+                    body,
+                    created_at,
+                    profiles(username),
+                    upvotes(count)
+                `)
+                .in('question_id', questionIds)
+                .order('created_at', { ascending: true });
+
+            if (answersError) throw answersError;
+
+            // fetch current user's upvotes for questions and answers
+            const { data: userUpvotes } = await supabase
+                .from('upvotes')
+                .select('answer_id, question_id')
+                .eq('user_id', session.user.id);
+
+            const upvotedAnswerIds = new Set(userUpvotes?.filter(u => u.answer_id).map(u => u.answer_id) || []);
+            const upvotedQuestionIds = new Set(userUpvotes?.filter(u => u.question_id).map(u => u.question_id) || []);
+
+            // attach answers as nested tree to each question
+            const questionsWithAnswers = questions.map(q => ({
+                ...q,
+                upvoteCount: q.upvotes?.[0]?.count || 0,
+                isUpvoted: upvotedQuestionIds.has(q.id),
+                answers: buildAnswerTree(
+                    answers
+                        .filter(a => a.question_id === q.id)
+                        .map(a => ({
+                            ...a,
+                            upvoteCount: a.upvotes?.[0]?.count || 0,
+                            isUpvoted: upvotedAnswerIds.has(a.id)
+                        })),
+                    null
+                )
+            }));
+
+            return questionsWithAnswers;
         } catch (error) {
             console.error('Error fetching questions:', error);
             return [];
         }
     };
 
-    // Post a question
     const postQuestion = async (resourceId, title, body) => {
         try {
             const { data, error } = await supabase
@@ -193,15 +222,16 @@ export const ResourceContextProvider = ({ children }) => {
         }
     };
 
-    // Post an answer to a question
-    const postAnswer = async (questionId, body) => {
+    // ← updated to accept parent_id for nested replies
+    const postAnswer = async (questionId, body, parentId = null) => {
         try {
             const { data, error } = await supabase
                 .from('answers')
                 .insert({
                     question_id: questionId,
                     user_id: session.user.id,
-                    body
+                    body,
+                    parent_id: parentId // ← null for direct answers, answer id for replies
                 })
                 .select()
                 .single();
@@ -214,19 +244,28 @@ export const ResourceContextProvider = ({ children }) => {
         }
     };
 
-    // Upvote an answer
+    // ← updated to support upvoting both answers and questions
     const upvoteAnswer = async (answerId) => {
+        return upvoteItem({ answerId });
+    };
+
+    const upvoteQuestion = async (questionId) => {
+        return upvoteItem({ questionId });
+    };
+
+    const upvoteItem = async ({ answerId = null, questionId = null }) => {
         try {
-            const { data: existingVote, error: checkError } = await supabase
+            let query = supabase
                 .from('upvotes')
                 .select('id')
-                .eq('answer_id', answerId)
-                .eq('user_id', session.user.id)
-                .single();
+                .eq('user_id', session.user.id);
 
-            if (checkError && checkError.code !== 'PGRST116') {
-                throw checkError;
-            }
+            if (answerId) query = query.eq('answer_id', answerId);
+            if (questionId) query = query.eq('question_id', questionId);
+
+            const { data: existingVote, error: checkError } = await query.single();
+
+            if (checkError && checkError.code !== 'PGRST116') throw checkError;
 
             if (existingVote) {
                 const { error: deleteError } = await supabase
@@ -237,23 +276,23 @@ export const ResourceContextProvider = ({ children }) => {
                 if (deleteError) throw deleteError;
                 return { success: true, upvoted: false };
             } else {
+                const insertData = { user_id: session.user.id };
+                if (answerId) insertData.answer_id = answerId;
+                if (questionId) insertData.question_id = questionId;
+
                 const { error: insertError } = await supabase
                     .from('upvotes')
-                    .insert({
-                        answer_id: answerId,
-                        user_id: session.user.id
-                    });
+                    .insert(insertData);
 
                 if (insertError) throw insertError;
                 return { success: true, upvoted: true };
             }
         } catch (error) {
-            console.error('Error upvoting answer:', error);
+            console.error('Error upvoting:', error);
             return { success: false, error: error.message };
         }
     };
 
-    // Delete a question
     const deleteQuestion = async (questionId) => {
         try {
             const { error } = await supabase
@@ -270,7 +309,6 @@ export const ResourceContextProvider = ({ children }) => {
         }
     };
 
-    // Delete an answer
     const deleteAnswer = async (answerId) => {
         try {
             const { error } = await supabase
@@ -287,15 +325,11 @@ export const ResourceContextProvider = ({ children }) => {
         }
     };
 
-    // Follow a user
     const followUser = async (userIdToFollow) => {
         try {
             const { error } = await supabase
                 .from('follows')
-                .insert({
-                    follower_id: session.user.id,
-                    following_id: userIdToFollow
-                });
+                .insert({ follower_id: session.user.id, following_id: userIdToFollow });
 
             if (error) throw error;
             return { success: true };
@@ -305,7 +339,6 @@ export const ResourceContextProvider = ({ children }) => {
         }
     };
 
-    // Unfollow a user
     const unfollowUser = async (userIdToUnfollow) => {
         try {
             const { error } = await supabase
@@ -322,7 +355,6 @@ export const ResourceContextProvider = ({ children }) => {
         }
     };
 
-    // Check if following a user
     const checkIfFollowing = async (userIdToCheck) => {
         try {
             const { data, error } = await supabase
@@ -332,10 +364,7 @@ export const ResourceContextProvider = ({ children }) => {
                 .eq('following_id', userIdToCheck)
                 .single();
 
-            if (error && error.code !== 'PGRST116') {
-                throw error;
-            }
-
+            if (error && error.code !== 'PGRST116') throw error;
             return data ? true : false;
         } catch (error) {
             console.error('Error checking follow status:', error);
@@ -345,158 +374,86 @@ export const ResourceContextProvider = ({ children }) => {
 
     const uploadResource = async ({ title, description, courseCode, year, instructor, resourceType, files, department }) => {
 
-        // 1. check for duplicate
         const { data: existingByCombination } = await supabase
-            .from('resources')
-            .select('id')
-            .eq('course_code', courseCode)
-            .eq('instructor', instructor)
-            .eq('year', year)
-            .limit(1)
+            .from('resources').select('id')
+            .eq('course_code', courseCode).eq('instructor', instructor).eq('year', year).limit(1);
 
         const { data: existingByTitle } = await supabase
-            .from('resources')
-            .select('id')
-            .eq('title', title)
-            .limit(1)
+            .from('resources').select('id').eq('title', title).limit(1);
 
-        if (
-            (existingByCombination && existingByCombination.length > 0) ||
-            (existingByTitle && existingByTitle.length > 0)
-        ) {
-            return { success: false, error: 'Resource already exists' }
+        if ((existingByCombination && existingByCombination.length > 0) || (existingByTitle && existingByTitle.length > 0)) {
+            return { success: false, error: 'Resource already exists' };
         }
 
-        // 2. Upload first file to get URL for the resources table
-        let primaryFileUrl = null;
         const firstFile = files[0];
         const firstFileExt = firstFile.name.split('.').pop();
         const firstFileName = `${Date.now()}_${Math.random()}_${firstFile.name}`;
-        
-        const { error: firstFileError } = await supabase.storage
-            .from('resources')
-            .upload(firstFileName, firstFile);
 
-        if (firstFileError) {
-            console.error('file upload error: ', firstFileError);
-            return { success: false, error: firstFileError };
-        }
+        const { error: firstFileError } = await supabase.storage.from('resources').upload(firstFileName, firstFile);
+        if (firstFileError) return { success: false, error: firstFileError };
 
-        // Get public URL for first file
-        const { data: { publicUrl } } = supabase.storage
-            .from('resources')
-            .getPublicUrl(firstFileName);
+        const { data: { publicUrl } } = supabase.storage.from('resources').getPublicUrl(firstFileName);
 
-        primaryFileUrl = publicUrl;
-
-        // 3. Create the main resource entry with first file URL
         const { data: resourceData, error: resourceError } = await supabase
             .from('resources')
             .insert({
-                user_id: session.user.id,
-                title,
-                description,
-                course_code: courseCode,
-                year,
-                instructor,
-                resource_type: resourceType,
-                file_url: primaryFileUrl,
-                file_type: firstFileExt === 'pdf' ? 'pdf' : 'image',
-                department
+                user_id: session.user.id, title, description,
+                course_code: courseCode, year, instructor,
+                resource_type: resourceType, file_url: publicUrl,
+                file_type: firstFileExt === 'pdf' ? 'pdf' : 'image', department
             })
-            .select()
-            .single()
+            .select().single();
 
-        if (resourceError) {
-            console.error('database insert error: ', resourceError)
-            return { success: false, error: resourceError }
-        }
+        if (resourceError) return { success: false, error: resourceError };
 
         const resourceId = resourceData.id;
-
-        // 4. Upload ALL files (including first) to resource_files table
         const uploadedFiles = [];
-        
+
         for (const file of files) {
             try {
                 const fileExt = file.name.split('.').pop();
                 const fileName = `${Date.now()}_${Math.random()}_${file.name}`;
-                
-                // Upload to storage
-                const { error: fileError } = await supabase.storage
-                    .from('resources')
-                    .upload(fileName, file);
 
-                if (fileError) {
-                    console.error('file upload error: ', fileError);
-                    continue;
-                }
+                const { error: fileError } = await supabase.storage.from('resources').upload(fileName, file);
+                if (fileError) continue;
 
-                // Get public URL
-                const { data: { publicUrl } } = supabase.storage
-                    .from('resources')
-                    .getPublicUrl(fileName);
+                const { data: { publicUrl } } = supabase.storage.from('resources').getPublicUrl(fileName);
 
-                // Store file reference in resource_files table
                 const { error: fileRefError } = await supabase
                     .from('resource_files')
-                    .insert({
-                        resource_id: resourceId,
-                        file_url: publicUrl,
-                        file_type: fileExt === 'pdf' ? 'pdf' : 'image'
-                    });
+                    .insert({ resource_id: resourceId, file_url: publicUrl, file_type: fileExt === 'pdf' ? 'pdf' : 'image' });
 
-                if (fileRefError) {
-                    console.error('file reference error: ', fileRefError);
-                    continue;
-                }
-
-                uploadedFiles.push(publicUrl);
+                if (!fileRefError) uploadedFiles.push(publicUrl);
             } catch (error) {
                 console.error('Error uploading file:', error);
             }
         }
 
-        // 5. Update points
-        const pointsToAdd = pointsMap[resourceType] || 3
-
+        const pointsToAdd = pointsMap[resourceType] || 3;
         const { error: pointsError } = await supabase
-            .from('profiles')
-            .update({ points: userPoints + pointsToAdd })
-            .eq('id', session.user.id);
+            .from('profiles').update({ points: userPoints + pointsToAdd }).eq('id', session.user.id);
 
-        if (!pointsError) {
-            setPoints(userPoints + pointsToAdd)
-        }
+        if (!pointsError) setPoints(userPoints + pointsToAdd);
 
-        return { success: true, data: resourceData, pointsEarned: pointsToAdd, filesUploaded: uploadedFiles.length }
-    }
+        return { success: true, data: resourceData, pointsEarned: pointsToAdd, filesUploaded: uploadedFiles.length };
+    };
 
     const value = {
-        uploadResource,
-        searchResources,
-        unlockResource,
-        fetchAllResources,
-        fetchQuestions,
-        postQuestion,
-        postAnswer,
-        upvoteAnswer,
-        deleteQuestion,
-        deleteAnswer,
-        followUser,
-        unfollowUser,
-        checkIfFollowing,
-        unlockedResources,
-        loading
+        uploadResource, searchResources, unlockResource, fetchAllResources,
+        fetchQuestions, postQuestion, postAnswer,
+        upvoteAnswer, upvoteQuestion, // ← added upvoteQuestion
+        deleteQuestion, deleteAnswer,
+        followUser, unfollowUser, checkIfFollowing,
+        unlockedResources, loading
     };
 
     return (
         <ResourceContext.Provider value={value}>
             {children}
         </ResourceContext.Provider>
-    )
-}
+    );
+};
 
 export const UseResource = () => {
     return useContext(ResourceContext);
-}
+};
