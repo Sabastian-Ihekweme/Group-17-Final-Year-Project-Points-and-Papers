@@ -9,14 +9,12 @@ export const ResourceContextProvider = ({ children }) => {
     const [unlockedResources, setUnlockedResources] = useState([]);
     const [loading, setLoading] = useState(true);
 
-    // Upload points for sharing resources
     const uploadPointsMap = {
         'midterm exam': 50,
         'final exam': 70,
         'report/essay': 20
     }
 
-    // Unlock points costs
     const unlockPointsMap = {
         'midterm exam': 30,
         'final exam': 50,
@@ -89,10 +87,8 @@ export const ResourceContextProvider = ({ children }) => {
         }
     };
 
-    // Fetch fresh points from database before checking
     const unlockResource = async (resourceId, resourceType) => {
         try {
-            // Fetch current points from database (fresh data)
             const { data: profileData, error: profileError } = await supabase
                 .from('profiles')
                 .select('points')
@@ -100,8 +96,8 @@ export const ResourceContextProvider = ({ children }) => {
                 .single();
 
             if (profileError || !profileData) {
-                return { 
-                    success: false, 
+                return {
+                    success: false,
                     error: 'Failed to fetch your points. Please try again.'
                 };
             }
@@ -109,15 +105,13 @@ export const ResourceContextProvider = ({ children }) => {
             const currentPoints = profileData.points || 0;
             const pointsCost = unlockPointsMap[resourceType] || 15;
 
-            // Check against FRESH points from database, not stale state
             if (currentPoints < pointsCost) {
-                return { 
-                    success: false, 
+                return {
+                    success: false,
                     error: `You don't have enough points to unlock this resource.\n\nPoints needed: ${pointsCost}\nPoints available: ${currentPoints}\n\nShare resources or answer questions to gain points.`
                 };
             }
 
-            // Insert unlock record
             const { error: unlockError } = await supabase
                 .from('unlocked_resources')
                 .insert({
@@ -128,7 +122,6 @@ export const ResourceContextProvider = ({ children }) => {
 
             if (unlockError) throw unlockError;
 
-            // Deduct points
             const { error: pointsError } = await supabase
                 .from('profiles')
                 .update({ points: currentPoints - pointsCost })
@@ -136,7 +129,6 @@ export const ResourceContextProvider = ({ children }) => {
 
             if (pointsError) throw pointsError;
 
-            // Update local state
             setUnlockedResources(prev => [...prev, resourceId]);
             setPoints(currentPoints - pointsCost);
 
@@ -147,7 +139,6 @@ export const ResourceContextProvider = ({ children }) => {
         }
     };
 
-    // Recursively builds nested replies
     const buildAnswerTree = (answers, parentId = null) => {
         return answers
             .filter(a => a.parent_id === parentId)
@@ -157,10 +148,8 @@ export const ResourceContextProvider = ({ children }) => {
             }));
     };
 
-    // Fetch nested replies + question upvotes + user upvote status
     const fetchQuestions = async (resourceId) => {
         try {
-            // fetch questions with their upvote counts
             const { data: questions, error: questionsError } = await supabase
                 .from('questions')
                 .select(`
@@ -177,9 +166,7 @@ export const ResourceContextProvider = ({ children }) => {
 
             if (questionsError) throw questionsError;
 
-            // fetch ALL answers for this resource's questions (flat list)
             const questionIds = questions.map(q => q.id);
-
             if (questionIds.length === 0) return [];
 
             const { data: answers, error: answersError } = await supabase
@@ -199,7 +186,6 @@ export const ResourceContextProvider = ({ children }) => {
 
             if (answersError) throw answersError;
 
-            // fetch current user's upvotes for questions and answers
             const { data: userUpvotes } = await supabase
                 .from('upvotes')
                 .select('answer_id, question_id')
@@ -208,7 +194,6 @@ export const ResourceContextProvider = ({ children }) => {
             const upvotedAnswerIds = new Set(userUpvotes?.filter(u => u.answer_id).map(u => u.answer_id) || []);
             const upvotedQuestionIds = new Set(userUpvotes?.filter(u => u.question_id).map(u => u.question_id) || []);
 
-            // attach answers as nested tree to each question
             const questionsWithAnswers = questions.map(q => ({
                 ...q,
                 upvoteCount: q.upvotes?.[0]?.count || 0,
@@ -253,7 +238,6 @@ export const ResourceContextProvider = ({ children }) => {
         }
     };
 
-    // Added points for posting answer (+5 points)
     const postAnswer = async (questionId, body, parentId = null) => {
         try {
             const { data, error } = await supabase
@@ -269,7 +253,6 @@ export const ResourceContextProvider = ({ children }) => {
 
             if (error) throw error;
 
-            // Award +5 points for answering a question
             const pointsToAdd = 5;
             const { data: profileData } = await supabase
                 .from('profiles')
@@ -283,9 +266,7 @@ export const ResourceContextProvider = ({ children }) => {
                 .update({ points: currentPoints + pointsToAdd })
                 .eq('id', session.user.id);
 
-            if (!pointsError) {
-                setPoints(currentPoints + pointsToAdd);
-            }
+            if (!pointsError) setPoints(currentPoints + pointsToAdd);
 
             return { success: true, data };
         } catch (error) {
@@ -294,7 +275,6 @@ export const ResourceContextProvider = ({ children }) => {
         }
     };
 
-    // Updated to support upvoting both answers and questions
     const upvoteAnswer = async (answerId) => {
         return upvoteItem({ answerId });
     };
@@ -303,7 +283,6 @@ export const ResourceContextProvider = ({ children }) => {
         return upvoteItem({ questionId });
     };
 
-    // Added points for getting upvoted (+2 points)
     const upvoteItem = async ({ answerId = null, questionId = null }) => {
         try {
             let query = supabase
@@ -319,7 +298,6 @@ export const ResourceContextProvider = ({ children }) => {
             if (checkError && checkError.code !== 'PGRST116') throw checkError;
 
             if (existingVote) {
-                // Remove upvote - deduct 2 points
                 const { error: deleteError } = await supabase
                     .from('upvotes')
                     .delete()
@@ -327,21 +305,14 @@ export const ResourceContextProvider = ({ children }) => {
 
                 if (deleteError) throw deleteError;
 
-                // Get the answer/question owner to deduct points
                 if (answerId) {
                     const { data: answer } = await supabase
-                        .from('answers')
-                        .select('user_id')
-                        .eq('id', answerId)
-                        .single();
-                    
+                        .from('answers').select('user_id').eq('id', answerId).single();
+
                     if (answer) {
                         const { data: ownerProfile } = await supabase
-                            .from('profiles')
-                            .select('points')
-                            .eq('id', answer.user_id)
-                            .single();
-                        
+                            .from('profiles').select('points').eq('id', answer.user_id).single();
+
                         if (ownerProfile) {
                             await supabase
                                 .from('profiles')
@@ -351,18 +322,12 @@ export const ResourceContextProvider = ({ children }) => {
                     }
                 } else if (questionId) {
                     const { data: question } = await supabase
-                        .from('questions')
-                        .select('user_id')
-                        .eq('id', questionId)
-                        .single();
-                    
+                        .from('questions').select('user_id').eq('id', questionId).single();
+
                     if (question) {
                         const { data: ownerProfile } = await supabase
-                            .from('profiles')
-                            .select('points')
-                            .eq('id', question.user_id)
-                            .single();
-                        
+                            .from('profiles').select('points').eq('id', question.user_id).single();
+
                         if (ownerProfile) {
                             await supabase
                                 .from('profiles')
@@ -378,27 +343,17 @@ export const ResourceContextProvider = ({ children }) => {
                 if (answerId) insertData.answer_id = answerId;
                 if (questionId) insertData.question_id = questionId;
 
-                const { error: insertError } = await supabase
-                    .from('upvotes')
-                    .insert(insertData);
-
+                const { error: insertError } = await supabase.from('upvotes').insert(insertData);
                 if (insertError) throw insertError;
 
-                // Award +2 points to the answer/question owner
                 if (answerId) {
                     const { data: answer } = await supabase
-                        .from('answers')
-                        .select('user_id')
-                        .eq('id', answerId)
-                        .single();
-                    
+                        .from('answers').select('user_id').eq('id', answerId).single();
+
                     if (answer) {
                         const { data: ownerProfile } = await supabase
-                            .from('profiles')
-                            .select('points')
-                            .eq('id', answer.user_id)
-                            .single();
-                        
+                            .from('profiles').select('points').eq('id', answer.user_id).single();
+
                         if (ownerProfile) {
                             await supabase
                                 .from('profiles')
@@ -408,18 +363,12 @@ export const ResourceContextProvider = ({ children }) => {
                     }
                 } else if (questionId) {
                     const { data: question } = await supabase
-                        .from('questions')
-                        .select('user_id')
-                        .eq('id', questionId)
-                        .single();
-                    
+                        .from('questions').select('user_id').eq('id', questionId).single();
+
                     if (question) {
                         const { data: ownerProfile } = await supabase
-                            .from('profiles')
-                            .select('points')
-                            .eq('id', question.user_id)
-                            .single();
-                        
+                            .from('profiles').select('points').eq('id', question.user_id).single();
+
                         if (ownerProfile) {
                             await supabase
                                 .from('profiles')
@@ -516,7 +465,6 @@ export const ResourceContextProvider = ({ children }) => {
         }
     };
 
-    // Export unlockPointsMap so it can be used in components
     const uploadResource = async ({ title, description, courseCode, year, instructor, resourceType, files, department }) => {
 
         const { data: existingByCombination } = await supabase
@@ -538,6 +486,7 @@ export const ResourceContextProvider = ({ children }) => {
         if (firstFileError) return { success: false, error: firstFileError };
 
         const { data: { publicUrl } } = supabase.storage.from('resources').getPublicUrl(firstFileName);
+        const firstFileType = firstFileExt === 'pdf' ? 'pdf' : 'image'
 
         const { data: resourceData, error: resourceError } = await supabase
             .from('resources')
@@ -545,7 +494,7 @@ export const ResourceContextProvider = ({ children }) => {
                 user_id: session.user.id, title, description,
                 course_code: courseCode, year, instructor,
                 resource_type: resourceType, file_url: publicUrl,
-                file_type: firstFileExt === 'pdf' ? 'pdf' : 'image', department
+                file_type: firstFileType, department
             })
             .select().single();
 
@@ -557,24 +506,42 @@ export const ResourceContextProvider = ({ children }) => {
         for (const file of files) {
             try {
                 const fileExt = file.name.split('.').pop();
+                const fileType = fileExt === 'pdf' ? 'pdf' : 'image'
                 const fileName = `${Date.now()}_${Math.random()}_${file.name}`;
 
                 const { error: fileError } = await supabase.storage.from('resources').upload(fileName, file);
                 if (fileError) continue;
 
-                const { data: { publicUrl } } = supabase.storage.from('resources').getPublicUrl(fileName);
+                const { data: { publicUrl: fileUrl } } = supabase.storage.from('resources').getPublicUrl(fileName);
 
-                const { error: fileRefError } = await supabase
+                const { data: fileRef, error: fileRefError } = await supabase
                     .from('resource_files')
-                    .insert({ resource_id: resourceId, file_url: publicUrl, file_type: fileExt === 'pdf' ? 'pdf' : 'image' });
+                    .insert({ resource_id: resourceId, file_url: fileUrl, file_type: fileType })
+                    .select().single();
 
-                if (!fileRefError) uploadedFiles.push(publicUrl);
+                if (!fileRefError && fileRef) {
+                    uploadedFiles.push(fileUrl)
+
+                    // Trigger text extraction for each file (non-blocking)
+                    fetch(`${import.meta.env.VITE_APP_SUPABASE_URL}/functions/v1/extract-text`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${import.meta.env.VITE_APP_ANON_KEY}`,
+                        },
+                        body: JSON.stringify({
+                            fileUrl,
+                            fileType,
+                            resourceId,
+                            fileId: fileRef.id
+                        })
+                    }).catch(err => console.error('Extraction error:', err))
+                }
             } catch (error) {
                 console.error('Error uploading file:', error);
             }
         }
 
-        // Fetch fresh points for upload
         const { data: profileData } = await supabase
             .from('profiles')
             .select('points')
@@ -583,7 +550,7 @@ export const ResourceContextProvider = ({ children }) => {
 
         const currentPoints = profileData?.points || 0;
         const pointsToAdd = uploadPointsMap[resourceType] || 20;
-        
+
         const { error: pointsError } = await supabase
             .from('profiles').update({ points: currentPoints + pointsToAdd }).eq('id', session.user.id);
 
@@ -599,7 +566,7 @@ export const ResourceContextProvider = ({ children }) => {
         deleteQuestion, deleteAnswer,
         followUser, unfollowUser, checkIfFollowing,
         unlockedResources, loading,
-        unlockPointsMap  // ← Export this so components can use it
+        unlockPointsMap
     };
 
     return (

@@ -260,7 +260,6 @@ function ResourceDetailsImage() {
     const goToPrevious = () => setCurrentIndex(prev => prev === 0 ? resources.length - 1 : prev - 1);
     const goToNext = () => setCurrentIndex(prev => prev === resources.length - 1 ? 0 : prev + 1);
 
-    // Helper to recursively update answer upvotes
     const updateAnswerUpvote = (answers, answerId) => {
         return answers.map(a => {
             if (a.id === answerId) {
@@ -302,18 +301,14 @@ function ResourceDetailsImage() {
     };
 
     const handleUpvoteAnswer = async (answerId) => {
-        // update UI instantly
         setQuestions(prev => prev.map(q => ({
             ...q,
             answers: updateAnswerUpvote(q.answers, answerId)
         })));
-
-        // sync with server in background
         await upvoteAnswer(answerId);
-    }
+    };
 
     const handleUpvoteQuestion = async (questionId) => {
-        // update UI instantly
         setQuestions(prev => prev.map(q => {
             if (q.id !== questionId) return q;
             const isUpvoted = q.isUpvoted;
@@ -323,10 +318,8 @@ function ResourceDetailsImage() {
                 upvoteCount: isUpvoted ? q.upvoteCount - 1 : q.upvoteCount + 1
             };
         }));
-
-        // sync with server in background
         await upvoteQuestion(questionId);
-    }
+    };
 
     const handleDeleteQuestion = async (questionId) => {
         if (!window.confirm('Are you sure you want to delete this question?')) return;
@@ -342,7 +335,6 @@ function ResourceDetailsImage() {
         else alert('Failed to delete answer: ' + result.error);
     };
 
-    // Open current image in new browser tab
     const handleViewResource = () => {
         if (resources.length > 0) {
             window.open(resources[currentIndex], '_blank');
@@ -469,8 +461,18 @@ function ResourceDetailsImage() {
                     <div className="div-2">
                         <div className="resource-interactions">
                             <h3>Resource Interactions</h3>
-                            <button className="generate-ai-notes">Generate AI Notes</button>
-                            <button className="generate-ai-answers">Generate AI Answers</button>
+                            <button
+                                className="generate-ai-notes"
+                                onClick={() => navigate('/generate-ai-notes', { state: { resource } })}
+                            >
+                                Generate AI Notes
+                            </button>
+                            <button
+                                className="generate-ai-answers"
+                                onClick={() => navigate('/generate-ai-answer', { state: { resource } })}
+                            >
+                                Generate AI Answers
+                            </button>
                         </div>
                     </div>
                 </div>

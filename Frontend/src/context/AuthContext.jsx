@@ -45,7 +45,7 @@ export const AuthContextProvider = ({children}) => {
 
     const fetchUnreadNotifications = async () => {
         try {
-            // Count followers + upvotes + answers from last 24 hours
+        
             const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
             
             const { count: followerCount = 0 } = await supabase
@@ -72,7 +72,6 @@ export const AuthContextProvider = ({children}) => {
         }
     };
 
-    // persist login on refresh
     useEffect(() => {
         supabase.auth.getSession().then(({data: {session}}) => {
             setSession(session)

@@ -228,7 +228,6 @@ function ResourceDetailsPDF() {
         setQuestions(data);
     };
 
-    // ← helper to recursively update answer upvotes
     const updateAnswerUpvote = (answers, answerId) => {
         return answers.map(a => {
             if (a.id === answerId) {
@@ -269,32 +268,26 @@ function ResourceDetailsPDF() {
         }
     };
 
-const handleUpvoteAnswer = async (answerId) => {
-    // update UI instantly
-    setQuestions(prev => prev.map(q => ({
-        ...q,
-        answers: updateAnswerUpvote(q.answers, answerId)
-    })));
-
-    // sync with server in background
-    await upvoteAnswer(answerId);
-}
-
-const handleUpvoteQuestion = async (questionId) => {
-    // update UI instantly
-    setQuestions(prev => prev.map(q => {
-        if (q.id !== questionId) return q;
-        const isUpvoted = q.isUpvoted;
-        return {
+    const handleUpvoteAnswer = async (answerId) => {
+        setQuestions(prev => prev.map(q => ({
             ...q,
-            isUpvoted: !isUpvoted,
-            upvoteCount: isUpvoted ? q.upvoteCount - 1 : q.upvoteCount + 1
-        };
-    }));
+            answers: updateAnswerUpvote(q.answers, answerId)
+        })));
+        await upvoteAnswer(answerId);
+    };
 
-    // sync with server in background
-    await upvoteQuestion(questionId);
-}
+    const handleUpvoteQuestion = async (questionId) => {
+        setQuestions(prev => prev.map(q => {
+            if (q.id !== questionId) return q;
+            const isUpvoted = q.isUpvoted;
+            return {
+                ...q,
+                isUpvoted: !isUpvoted,
+                upvoteCount: isUpvoted ? q.upvoteCount - 1 : q.upvoteCount + 1
+            };
+        }));
+        await upvoteQuestion(questionId);
+    };
 
     const handleDeleteQuestion = async (questionId) => {
         if (!window.confirm('Are you sure you want to delete this question?')) return;
@@ -391,8 +384,18 @@ const handleUpvoteQuestion = async (questionId) => {
                     <div className="div-2">
                         <div className="resource-interactions">
                             <h3>Resource Interactions</h3>
-                            <button className="generate-ai-notes">Generate AI Notes</button>
-                            <button className="generate-ai-answers">Generate AI Answers</button>
+                            <button
+                                className="generate-ai-notes"
+                                onClick={() => navigate('/generate-ai-notes', { state: { resource } })}
+                            >
+                                Generate AI Notes
+                            </button>
+                            <button
+                                className="generate-ai-answers"
+                                onClick={() => navigate('/generate-ai-answer', { state: { resource } })}
+                            >
+                                Generate AI Answers
+                            </button>
                         </div>
                     </div>
                 </div>
