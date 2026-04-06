@@ -15,6 +15,7 @@ import AINotes from "./AINotes";
 import MyContributions from "./MyContributions";
 import Followers from "./Followers";
 import Notifications from "./Notifications";
+import EditProfile from "./EditProfile";
 import { UserAuth } from "./context/AuthContext";
 
 // ← protects routes, redirects to login if not authenticated
@@ -38,6 +39,7 @@ function MyRoutes() {
             <Route index element={<UserRegistration />} />
             <Route path="/user-registration" element={<UserRegistration />} />
             <Route path="/user-login" element={<UserLogin />} />
+            <Route path="/edit-profile" element={<ProtectedRoute><EditProfile /></ProtectedRoute>} />
 
             {/* protected routes */}
             <Route path="/header" element={<ProtectedRoute><Header /></ProtectedRoute>} />
