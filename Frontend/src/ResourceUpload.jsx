@@ -3,6 +3,7 @@ import { useState, useRef } from 'react';
 import './styles/ResourceUpload.css';
 import { UseResource } from './context/ResourceContext';
 import { useNavigate } from 'react-router-dom';
+import { useOnlineStatus } from './useOnlineStatus';
 
 function ResourceUpload() {
 
@@ -10,10 +11,11 @@ function ResourceUpload() {
         { resourceType: 'midterm exam', points: 50 },
         { resourceType: 'final exam', points: 70 },
         { resourceType: 'report/essay', points: 20 }
-    ]
+    ];
 
     const { uploadResource } = UseResource();
     const navigate = useNavigate();
+    const isOnline = useOnlineStatus();
 
     const [selectedResourceType, setSelectedResourceType] = useState("");
     const [title, setTitle] = useState("");
@@ -24,7 +26,7 @@ function ResourceUpload() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
     const [popup, setPopup] = useState(null);
-    const [formKey, setFormKey] = useState(0) // ← forces form to reset
+    const [formKey, setFormKey] = useState(0);
 
     const [isDragging, setIsDragging] = useState(false);
     const [files, setFiles] = useState([]);
@@ -59,53 +61,63 @@ function ResourceUpload() {
     };
 
     const resetForm = () => {
-        setSelectedResourceType("")
-        setTitle("")
-        setCourseCode("")
-        setYear("")
-        setInstructor("")
-        setDescription("")
-        setFiles([])
-        setError("")
-        setFormKey(prev => prev + 1) // ← re-renders the form, clears all inputs
-    }
+        setSelectedResourceType("");
+        setTitle("");
+        setCourseCode("");
+        setYear("");
+        setInstructor("");
+        setDescription("");
+        setFiles([]);
+        setError("");
+        setFormKey(prev => prev + 1);
+    };
 
     const handleUpload = async (e) => {
-        e.preventDefault()
-        setError("")
+        e.preventDefault();
+        setError("");
 
-        if (!selectedResourceType) return setError("Please select a resource type")
-        if (!title) return setError("Please enter a title")
-        if (!courseCode) return setError("Please enter a course code")
-        if (!year) return setError("Please enter an academic year")
-        if (!instructor) return setError("Please enter an instructor name")
-        if (files.length === 0) return setError("Please upload at least one file")
+        if (!isOnline) return setError("No internet connection. Please check your connection and try again.");
 
-        setLoading(true)
+        // Validate all required fields
+        if (!selectedResourceType) return setError("Please select a resource type.");
+        if (!title.trim()) return setError("Please enter a title.");
+        if (!courseCode.trim()) return setError("Please enter a course code.");
+        if (!year.trim()) return setError("Please enter an academic year.");
+        if (!instructor.trim()) return setError("Please enter an instructor name.");
+        if (files.length === 0) return setError("Please upload at least one file.");
 
-        // Upload ALL files, not just the first one
-        const result = await uploadResource({
-            title, description, courseCode, year, instructor,
-            resourceType: selectedResourceType,
-            files: files  // ← pass all files instead of files[0]
-        })
+        setLoading(true);
 
-        if (result.success) {
-            setPopup(result.pointsEarned)
-            resetForm() // ← clears form immediately
-            setTimeout(() => {
-                setPopup(null)
-            }, 3000)
-        } else {
-            // ← shows specific error message including duplicate check
-            setError(result.error === 'Resource already exists'
-                ? 'A resource with the same details already exists'
-                : 'Something went wrong, please try again'
-            )
+        try {
+            const result = await uploadResource({
+                title: title.trim(),
+                description,
+                courseCode: courseCode.trim(),
+                year: year.trim(),
+                instructor: instructor.trim(),
+                resourceType: selectedResourceType,
+                files: files
+            });
+
+            if (result.success) {
+                setPopup(result.pointsEarned);
+                resetForm();
+                setTimeout(() => {
+                    setPopup(null);
+                }, 3000);
+            } else {
+                setError(result.error === 'Resource already exists'
+                    ? 'A resource with the same details already exists.'
+                    : 'Something went wrong, please try again.'
+                );
+            }
+        } catch (err) {
+            setError("An error occurred during upload. Please try again.");
+        } finally {
+            // Always reset loading — this fixes the mobile stuck button bug
+            setLoading(false);
         }
-
-        setLoading(false)
-    }
+    };
 
     return (
         <>
@@ -115,7 +127,13 @@ function ResourceUpload() {
 
             <div className="resource-upload-container">
 
-                <form key={formKey} onSubmit={handleUpload}> {/* ← key resets form */}
+                {!isOnline && (
+                    <div className="no-internet-banner">
+                        ⚠️ You're offline. Please check your internet connection to upload resources.
+                    </div>
+                )}
+
+                <form key={formKey} onSubmit={handleUpload}>
 
                     <div className="resource-details">
                         <h2>Resource Details</h2>
@@ -180,7 +198,7 @@ function ResourceUpload() {
                         </div>
 
                         <div className="resource-info-box">
-                            <label htmlFor="resource-description">Description (Optional) </label>
+                            <label htmlFor="resource-description">Description (Optional)</label>
                             <textarea
                                 name="resource-description"
                                 className="resource-description"
@@ -208,7 +226,7 @@ function ResourceUpload() {
                                 accept=".pdf, image/*"
                                 onChange={handleFileSelect}
                                 className="hidden-input"
-                                multiple  // ← Allow multiple file selection
+                                multiple
                             />
 
                             <svg className="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -229,7 +247,7 @@ function ResourceUpload() {
                                         <div className="file-info">
                                             <svg className="file-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                            </svg>
+                                            </svg>
                                             <div>
                                                 <p className="file-name">{file.name}</p>
                                                 <p className="file-size">{formatFileSize(file.size)}</p>
@@ -244,7 +262,7 @@ function ResourceUpload() {
 
                     {error && <p className="error-message">{error}</p>}
 
-                    <button className="upload-resource-btn" type="submit" disabled={loading}>
+                    <button className="upload-resource-btn" type="submit" disabled={loading || !isOnline}>
                         {loading ? "Uploading..." : "Upload Resource"}
                     </button>
 
@@ -259,7 +277,7 @@ function ResourceUpload() {
                 </div>
             )}
         </>
-    )
+    );
 }
 
 export default ResourceUpload;

@@ -1,0 +1,92 @@
+.verify-email-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    background: #f5f5f5;
+    padding: 20px;
+}
+
+.verify-email-card {
+    background: white;
+    border-radius: 12px;
+    padding: 48px 40px;
+    max-width: 480px;
+    width: 100%;
+    text-align: center;
+    box-shadow: 0px 4px 24px rgba(0, 0, 0, 0.08);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+}
+
+div {
+    background-color: transparent
+}
+
+img {
+    background-color: transparent;
+}
+
+h1, h2, h3, p span {
+    background-color: transparent;
+}
+
+.verify-email-card .logo-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+}
+
+.verify-email-card .logo-title h1 {
+    font-family: Montserrat;
+    font-size: 20px;
+    font-weight: 700;
+    color: #1A1A1A;
+}
+
+.verify-email-card .logo {
+    width: 32px;
+    height: 32px;
+}
+
+.email-icon {
+    font-size: 56px;
+    margin: 8px 0;
+}
+
+.verify-email-card h2 {
+    font-family: Montserrat;
+    font-size: 24px;
+    font-weight: 700;
+    color: #1A1A1A;
+    margin: 0;
+}
+
+.verify-email-card > p {
+    font-family: Open Sans;
+    font-size: 15px;
+    color: #5F5F5F;
+    line-height: 24px;
+    margin: 0;
+}
+
+.verify-tips {
+    background: #F0F7FF;
+    border-radius: 8px;
+    padding: 16px 20px;
+    text-align: left;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.verify-tips p {
+    font-family: Open Sans;
+    font-size: 13px;
+    color: #5F5F5F !important;
+    margin: 4px 0;
+    line-height: 22px;
+}

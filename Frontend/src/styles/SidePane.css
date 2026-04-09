@@ -50,6 +50,18 @@
     transform: translateY(-50%);
 }
 
+div {
+    background-color: transparent
+}
+
+img {
+    background-color: transparent;
+}
+
+h1, h2, h3, p span {
+    background-color: transparent;
+}
+
 .menu-label {
     position: relative;
     display: inline-flex;

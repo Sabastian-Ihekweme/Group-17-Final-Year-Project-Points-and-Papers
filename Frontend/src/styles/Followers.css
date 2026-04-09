@@ -235,3 +235,15 @@
     }
 
 }
+
+div {
+    background-color: transparent
+}
+
+img {
+    background-color: transparent;
+}
+
+h1, h2, h3, p span {
+    background-color: transparent;
+}

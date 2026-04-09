@@ -3,12 +3,26 @@ import { createContext, useContext, useEffect, useState} from "react";
 
 const AuthContext = createContext();
 
-export const AuthContextProvider = ({children}) => {
+// 40 pre-defined avatar seeds
+export const AVATAR_SEEDS = [
+    "tiger", "cosmos", "river", "phoenix", "storm",
+    "luna", "blaze", "echo", "nova", "frost",
+    "cedar", "atlas", "ember", "zephyr", "sage",
+    "onyx", "coral", "dusk", "haven", "flint",
+    "marble", "solstice", "birch", "nimbus", "vale",
+    "cinder", "thistle", "grove", "lumen", "quartz",
+    "sable", "tide", "wren", "axiom", "dune",
+    "halo", "moss", "prism", "rune", "beacon"
+];
+
+export const getAvatarUrl = (seed) => 
+    `https://api.dicebear.com/7.x/avataaars/svg?seed=${seed ?? 'default'}`;
+
+const AuthContextProvider = ({children}) => {
     const [session, setSession] = useState(undefined)
     const [points, setPoints] = useState(0)
     const [unreadNotifications, setUnreadNotifications] = useState(0)
 
-    // fetch points whenever session changes
     useEffect(() => {
         if (session?.user?.id) {
             const fetchPoints = async () => {
@@ -34,8 +48,6 @@ export const AuthContextProvider = ({children}) => {
                 }
             }
             fetchPoints()
-
-            // Fetch unread notification count (followers in last 24 hours)
             fetchUnreadNotifications()
         } else {
             setPoints(0)
@@ -45,7 +57,6 @@ export const AuthContextProvider = ({children}) => {
 
     const fetchUnreadNotifications = async () => {
         try {
-        
             const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
             
             const { count: followerCount = 0 } = await supabase
@@ -84,8 +95,10 @@ export const AuthContextProvider = ({children}) => {
         return () => subscription.unsubscribe()
     }, [])
 
-    // Sign Up
     const signUpNewUser = async (username, level, department, email, password) => {
+        // Assign a random avatar seed on signup
+        const randomSeed = AVATAR_SEEDS[Math.floor(Math.random() * AVATAR_SEEDS.length)];
+
         const { data, error } = await supabase.auth.signUp({
             email: email,
             password: password,
@@ -94,19 +107,27 @@ export const AuthContextProvider = ({children}) => {
                     username: username,
                     level: level,
                     department: department,
+                    avatar_seed: randomSeed,
                 }
             }
         });
 
-        if(error) {
+        if (error) {
             console.error("there was a problem signing up: ", error);
             return { success: false, error };
+        }
+
+        // Also update the profiles table directly with the avatar seed
+        if (data?.user?.id) {
+            await supabase
+                .from('profiles')
+                .update({ avatar_seed: randomSeed })
+                .eq('id', data.user.id);
         }
 
         return { success: true, data };
     }
 
-    // Sign in
     const signInUser = async (email, password) => {
         try {
             const {data, error} = await supabase.auth.signInWithPassword({
@@ -114,7 +135,7 @@ export const AuthContextProvider = ({children}) => {
                 password: password
             });
 
-            if(error) {
+            if (error) {
                 console.error("sign in error occured: ", error);
                 return { success: false, error: error.message };
             }
@@ -125,20 +146,56 @@ export const AuthContextProvider = ({children}) => {
         }
     }
 
-    // Sign Out
     const signOut = async () => {
         const { error } = await supabase.auth.signOut()
-        if(error) {
+        if (error) {
             console.error("there was an error: ", error);
         }
     }
 
+    const updateAvatar = async (seed) => {
+        try {
+            const { error } = await supabase
+                .from('profiles')
+                .update({ avatar_seed: seed })
+                .eq('id', session.user.id);
+
+            if (error) throw error;
+            return { success: true };
+        } catch (error) {
+            console.error('Error updating avatar:', error);
+            return { success: false, error: error.message };
+        }
+    }
+
+    const updateProfile = async ({ username, department, level }) => {
+        try {
+            const { error } = await supabase
+                .from('profiles')
+                .update({ username, department, level })
+                .eq('id', session.user.id);
+
+            if (error) throw error;
+            return { success: true };
+        } catch (error) {
+            console.error('Error updating profile:', error);
+            return { success: false, error: error.message };
+        }
+    }
+
     return (
-        <AuthContext.Provider value={{ session, signUpNewUser, signInUser, signOut, points, setPoints, unreadNotifications, setUnreadNotifications }}>
+        <AuthContext.Provider value={{ 
+            session, signUpNewUser, signInUser, signOut, 
+            points, setPoints, 
+            unreadNotifications, setUnreadNotifications,
+            updateAvatar, updateProfile
+        }}>
             {children}
         </AuthContext.Provider>
     )
 }
+
+export { AuthContextProvider };
 
 export const UserAuth = () => {
     return useContext(AuthContext);

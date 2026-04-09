@@ -3,6 +3,7 @@ import Header from "./Header";
 import "./styles/AIAnswer.css";
 import { useLocation, useNavigate } from "react-router-dom";
 import supabase from "./config/supabaseClient";
+import DiagnosticCheck from "./DiagnosticCheck";
 
 function AIAnswer() {
     const location = useLocation();
@@ -14,63 +15,77 @@ function AIAnswer() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
 
-    const handleGenerate = async (e) => {
-        e.preventDefault();
-        if (!question.trim()) return setError("Please enter a question");
-        if (!resource) return setError("No resource found");
+   const handleGenerate = async (e) => {
+    e.preventDefault();
+    if (!question.trim()) return setError("Please enter a question");
+    if (!resource) return setError("No resource found");
 
-        setLoading(true);
-        setError("");
-        setAnswer("");
+    setLoading(true);
+    setError("");
+    setAnswer("");
 
-        try {
-            // Fetch all files for this resource with their extracted text
-            const { data: files, error: filesError } = await supabase
-                .from('resource_files')
-                .select('id, file_url, file_type, extracted_text')
-                .eq('resource_id', resource.id)
+    try {
+        // Fetch all files for this resource with their extracted text
+        const { data: files, error: filesError } = await supabase
+            .from('resource_files')
+            .select('id, file_url, file_type, extracted_text')
+            .eq('resource_id', resource.id)
 
-            if (filesError) throw filesError
+        if (filesError) throw filesError
 
-            // If no files in resource_files, fall back to the resource itself
-            const filesToSend = files?.length > 0
-                ? files
-                : [{ file_url: resource.file_url, file_type: resource.file_type, extracted_text: resource.extracted_text }]
+        // If no files in resource_files, fall back to the resource itself
+        let filesToSend = files?.length > 0
+            ? files
+            : [{ file_url: resource.file_url, file_type: resource.file_type, extracted_text: resource.extracted_text }]
 
-            const response = await fetch(`${import.meta.env.VITE_APP_SUPABASE_URL}/functions/v1/ai-proxy`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${import.meta.env.VITE_APP_ANON_KEY}`,
-                },
-                body: JSON.stringify({
-                    question,
-                    resource,
-                    files: filesToSend
-                })
-            });
+        // Filter out files without extracted text
+        filesToSend = filesToSend.filter(f => f.extracted_text && f.extracted_text.trim().length > 0);
 
-            const data = await response.json();
-            console.log('Full response:', data);
-
-            if (data.error) {
-                setError(`Error: ${data.error}`);
-                return;
-            }
-
-            if (data.text) {
-                setAnswer(data.text);
-            } else {
-                setError("No answer was generated, please try again");
-            }
-
-        } catch (err) {
-            console.error(err);
-            setError("Something went wrong, please try again");
-        } finally {
+        if (filesToSend.length === 0) {
+            setError("The document text is still being processed. Please wait a moment and try again. This usually takes 10-30 seconds after upload.");
             setLoading(false);
+            return;
         }
-    };
+
+        console.log('Sending files with text:', filesToSend.map(f => ({ 
+            url: f.file_url, 
+            textLength: f.extracted_text?.length || 0 
+        })));
+
+        const response = await fetch(`${import.meta.env.VITE_APP_SUPABASE_URL}/functions/v1/ai-proxy`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${import.meta.env.VITE_APP_ANON_KEY}`,
+            },
+            body: JSON.stringify({
+                question,
+                resource,
+                files: filesToSend
+            })
+        });
+
+        const data = await response.json();
+        console.log('Full response:', data);
+
+        if (data.error) {
+            setError(`Error: ${data.error}`);
+            return;
+        }
+
+        if (data.text) {
+            setAnswer(data.text);
+        } else {
+            setError("No answer was generated, please try again");
+        }
+
+    } catch (err) {
+        console.error(err);
+        setError("Something went wrong, please try again");
+    } finally {
+        setLoading(false);
+    }
+};
 
     if (!resource) {
         return (

@@ -3,6 +3,7 @@ import Header from "./Header";
 import "./styles/AINotes.css";
 import { useLocation, useNavigate } from "react-router-dom";
 import supabase from "./config/supabaseClient";
+import DiagnosticCheck from "./DiagnosticCheck";
 
 function AINotes() {
     const location = useLocation();
@@ -22,64 +23,78 @@ function AINotes() {
         return "Detailed";
     };
 
-    const handleGenerate = async (e) => {
-        e.preventDefault();
-        if (!context.trim()) return setError("Please enter some context or a prompt");
-        if (!resource) return setError("No resource found");
+  const handleGenerate = async (e) => {
+    e.preventDefault();
+    if (!context.trim()) return setError("Please enter some context or a prompt");
+    if (!resource) return setError("No resource found");
 
-        setLoading(true);
-        setError("");
-        setNotes("");
+    setLoading(true);
+    setError("");
+    setNotes("");
 
-        try {
-            // Fetch all files for this resource with extracted text
-            const { data: files, error: filesError } = await supabase
-                .from('resource_files')
-                .select('id, file_url, file_type, extracted_text')
-                .eq('resource_id', resource.id);
+    try {
+        // Fetch all files for this resource with extracted text
+        const { data: files, error: filesError } = await supabase
+            .from('resource_files')
+            .select('id, file_url, file_type, extracted_text')
+            .eq('resource_id', resource.id);
 
-            if (filesError) throw filesError;
+        if (filesError) throw filesError;
 
-            const filesToSend = files?.length > 0
-                ? files
-                : [{ file_url: resource.file_url, file_type: resource.file_type, extracted_text: resource.extracted_text }];
+        let filesToSend = files?.length > 0
+            ? files
+            : [{ file_url: resource.file_url, file_type: resource.file_type, extracted_text: resource.extracted_text }];
 
-            const response = await fetch(`${import.meta.env.VITE_APP_SUPABASE_URL}/functions/v1/ai-notes`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${import.meta.env.VITE_APP_ANON_KEY}`,
-                },
-                body: JSON.stringify({
-                    context,
-                    resource,
-                    files: filesToSend,
-                    noteLength: getLengthLabel(noteLength),
-                    formatStyle
-                })
-            });
+        // Filter out files without extracted text
+        filesToSend = filesToSend.filter(f => f.extracted_text && f.extracted_text.trim().length > 0);
 
-            const data = await response.json();
-            console.log('Full response:', data);
-
-            if (data.error) {
-                setError(`Error: ${data.error}`);
-                return;
-            }
-
-            if (data.text) {
-                setNotes(data.text);
-            } else {
-                setError("No notes were generated, please try again");
-            }
-
-        } catch (err) {
-            console.error(err);
-            setError("Something went wrong, please try again");
-        } finally {
+        if (filesToSend.length === 0) {
+            setError("The document text is still being processed. Please wait a moment and try again. This usually takes 10-30 seconds after upload.");
             setLoading(false);
+            return;
         }
-    };
+
+        console.log('Sending files with text:', filesToSend.map(f => ({ 
+            url: f.file_url, 
+            textLength: f.extracted_text?.length || 0 
+        })));
+
+        const response = await fetch(`${import.meta.env.VITE_APP_SUPABASE_URL}/functions/v1/ai-notes`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${import.meta.env.VITE_APP_ANON_KEY}`,
+            },
+            body: JSON.stringify({
+                context,
+                resource,
+                files: filesToSend,
+                noteLength: getLengthLabel(noteLength),
+                formatStyle
+            })
+        });
+
+        const data = await response.json();
+        console.log('Full response:', data);
+
+        if (data.error) {
+            setError(`Error: ${data.error}`);
+            return;
+        }
+
+        if (data.text) {
+            setNotes(data.text);
+        } else {
+            setError("No notes were generated, please try again");
+        }
+
+    } catch (err) {
+        console.error(err);
+        setError("Something went wrong, please try again");
+    } finally {
+        setLoading(false);
+    }
+};
 
     const handleDownload = () => {
         if (!notes) return;
@@ -129,6 +144,7 @@ function AINotes() {
                     <div className="note-generation-control">
 
                         <h2>Note Generation Control</h2>
+
 
                         <form onSubmit={handleGenerate}>
 

@@ -297,6 +297,19 @@ p, strong, label {
     color: #e74c3c;
 }
 
+
+div {
+    background-color: transparent
+}
+
+img {
+    background-color: transparent;
+}
+
+h1, h2, h3, p span {
+    background-color: transparent;
+}
+
 /* ====================================== */
 /* DESKTOP VIEW (MIN-WIDTH: 768px) */
 /* ====================================== */
@@ -452,4 +465,26 @@ p, strong, label {
         font-size: 12px;
         line-height: 16px;
     }
+}
+
+.edit-profile-link {
+    margin-top: 8px;
+    font-family: Open Sans;
+    font-size: 13px;
+    color: #1F9EF9;
+    cursor: pointer;
+    text-decoration: underline;
+}
+
+.edit-profile-link:hover {
+    color: #0d7fd4;
+}
+
+.profile-picture {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    border: 3px solid #1F9EF9;
+    background: #f0f0f0;
+    object-fit: cover;
 }

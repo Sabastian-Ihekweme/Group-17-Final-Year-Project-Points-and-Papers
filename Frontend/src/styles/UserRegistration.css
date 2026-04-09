@@ -10,10 +10,13 @@
 }
 
 .registration-container {
+  display: flex;
     justify-content: center;
     flex-direction: column;
     width: 95%;
     margin-left: 20px;
+    text-align: center;
+    justify-content: center;
 }
 
 .user-registration h2 {
@@ -264,6 +267,18 @@ form {
     }
 
 
+}
+
+div {
+    background-color: transparent
+}
+
+img {
+    background-color: transparent;
+}
+
+h1, h2, h3, p span {
+    background-color: transparent;
 }
 
 

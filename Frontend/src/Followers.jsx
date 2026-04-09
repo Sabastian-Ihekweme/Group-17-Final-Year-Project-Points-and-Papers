@@ -120,10 +120,6 @@ const fetchFollowersAndFollowing = async () => {
                 
                 <h1>Manage Connections</h1>
 
-                <div className="view-notifications-button">
-                    <img className="notification-icon" src={notification}/>
-                    <button>View Notifications</button>
-                </div>
 
                 <div className="followers-or-following">
                     <button 

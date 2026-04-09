@@ -6,19 +6,31 @@ import "./styles/ResourceDetailsUnlocked.css";
 import { UseResource } from './context/ResourceContext';
 import { UserAuth } from './context/AuthContext';
 import supabase from './config/supabaseClient';
+import { useOnlineStatus } from './useOnlineStatus';
 
-const Answer = ({ answer, session, navigate, onUpvote, onDelete, onReply, replyingTo, setReplyingTo, newAnswerTexts, setNewAnswerTexts, depth = 0 }) => {
+
+const Answer = ({ answer, session, navigate, onUpvote, onDelete, onReply, replyingTo, setReplyingTo, newAnswerTexts, setNewAnswerTexts, depth = 0, isOnline }) => {
     const answerProfile = answer.profiles || {};
     const upvoteCount = answer.upvoteCount || 0;
     const isUpvoted = answer.isUpvoted || false;
     const isOwnAnswer = answer.user_id === session?.user?.id;
     const replies = answer.replies || [];
 
+    const handleUpvote = () => {
+        if (!isOnline) { alert("No internet connection. Please check your network."); return; }
+        onUpvote(answer.id);
+    };
+
+    const handleReply = () => {
+        if (!isOnline) { alert("No internet connection. Please check your network."); return; }
+        setReplyingTo(replyingTo === answer.id ? null : answer.id);
+    };
+
     return (
         <div className="comment-wrapper" style={{ marginLeft: depth > 0 ? '20px' : '0' }}>
             <div className="comment-container">
                 <img
-                    src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${answer.user_id}`}
+                    src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${answerProfile.avatar_seed || answer.user_id}`}
                     alt={answerProfile.username}
                     className="avatar"
                     onClick={() => navigate(`/profile/${answer.user_id}`)}
@@ -35,13 +47,13 @@ const Answer = ({ answer, session, navigate, onUpvote, onDelete, onReply, replyi
                     <div className="comment-actions">
                         <button
                             className={`action-button ${isUpvoted ? 'upvoted' : ''}`}
-                            onClick={() => onUpvote(answer.id)}
-                            style={{ color: isUpvoted ? '#000000' : 'inherit' }}
+                            onClick={handleUpvote}
+                            style={{ color: isUpvoted ? '#000000' : 'inherit', opacity: isOnline ? 1 : 0.5 }}
                         >
                             <ThumbsUp style={{ width: '0.875rem', height: '0.875rem' }} />
                             <span>{upvoteCount}</span>
                         </button>
-                        <button className="action-button" onClick={() => setReplyingTo(replyingTo === answer.id ? null : answer.id)}>
+                        <button className="action-button" onClick={handleReply} style={{ opacity: isOnline ? 1 : 0.5 }}>
                             <Reply style={{ width: '0.875rem', height: '0.875rem' }} />
                             <span>Reply</span>
                         </button>
@@ -85,6 +97,7 @@ const Answer = ({ answer, session, navigate, onUpvote, onDelete, onReply, replyi
                             newAnswerTexts={newAnswerTexts}
                             setNewAnswerTexts={setNewAnswerTexts}
                             depth={depth + 1}
+                            isOnline={isOnline}
                         />
                     ))}
                 </div>
@@ -93,18 +106,28 @@ const Answer = ({ answer, session, navigate, onUpvote, onDelete, onReply, replyi
     );
 };
 
-const Question = ({ question, session, navigate, onUpvoteQuestion, onUpvoteAnswer, onDeleteQuestion, onDeleteAnswer, onPostAnswer, replyingTo, setReplyingTo, newAnswerTexts, setNewAnswerTexts }) => {
+const Question = ({ question, session, navigate, onUpvoteQuestion, onUpvoteAnswer, onDeleteQuestion, onDeleteAnswer, onPostAnswer, replyingTo, setReplyingTo, newAnswerTexts, setNewAnswerTexts, isOnline }) => {
     const userProfile = question.profiles || {};
     const answers = question.answers || [];
     const isOwnQuestion = question.user_id === session?.user?.id;
     const isUpvoted = question.isUpvoted || false;
     const upvoteCount = question.upvoteCount || 0;
 
+    const handleUpvote = () => {
+        if (!isOnline) { alert("No internet connection. Please check your network."); return; }
+        onUpvoteQuestion(question.id);
+    };
+
+    const handleAnswer = () => {
+        if (!isOnline) { alert("No internet connection. Please check your network."); return; }
+        setReplyingTo(replyingTo === question.id ? null : question.id);
+    };
+
     return (
         <div className="comment-wrapper">
             <div className="comment-container">
                 <img
-                    src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${question.user_id}`}
+                    src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${userProfile.avatar_seed || question.user_id}`}
                     alt={userProfile.username}
                     className="avatar"
                     onClick={() => navigate(`/profile/${question.user_id}`)}
@@ -122,13 +145,13 @@ const Question = ({ question, session, navigate, onUpvoteQuestion, onUpvoteAnswe
                     <div className="comment-actions">
                         <button
                             className={`action-button ${isUpvoted ? 'upvoted' : ''}`}
-                            onClick={() => onUpvoteQuestion(question.id)}
-                            style={{ color: isUpvoted ? '#000000' : 'inherit' }}
+                            onClick={handleUpvote}
+                            style={{ color: isUpvoted ? '#000000' : 'inherit', opacity: isOnline ? 1 : 0.5 }}
                         >
                             <ThumbsUp style={{ width: '0.875rem', height: '0.875rem' }} />
                             <span>{upvoteCount}</span>
                         </button>
-                        <button className="action-button" onClick={() => setReplyingTo(replyingTo === question.id ? null : question.id)}>
+                        <button className="action-button" onClick={handleAnswer} style={{ opacity: isOnline ? 1 : 0.5 }}>
                             <Reply style={{ width: '0.875rem', height: '0.875rem' }} />
                             <span>Answer ({answers.length})</span>
                         </button>
@@ -172,6 +195,7 @@ const Question = ({ question, session, navigate, onUpvoteQuestion, onUpvoteAnswe
                             newAnswerTexts={newAnswerTexts}
                             setNewAnswerTexts={setNewAnswerTexts}
                             depth={0}
+                            isOnline={isOnline}
                         />
                     ))}
                 </div>
@@ -186,6 +210,7 @@ function ResourceDetailsImage() {
     const navigate = useNavigate();
     const { session } = UserAuth();
     const { fetchAllResources, fetchQuestions, postQuestion, postAnswer, upvoteAnswer, upvoteQuestion, deleteQuestion, deleteAnswer } = UseResource();
+    const isOnline = useOnlineStatus();
 
     const [resource, setResource] = useState(null);
     const [resourceImages, setResourceImages] = useState([]);
@@ -264,28 +289,22 @@ function ResourceDetailsImage() {
         return answers.map(a => {
             if (a.id === answerId) {
                 const isUpvoted = a.isUpvoted;
-                return {
-                    ...a,
-                    isUpvoted: !isUpvoted,
-                    upvoteCount: isUpvoted ? a.upvoteCount - 1 : a.upvoteCount + 1
-                };
+                return { ...a, isUpvoted: !isUpvoted, upvoteCount: isUpvoted ? a.upvoteCount - 1 : a.upvoteCount + 1 };
             }
             return { ...a, replies: updateAnswerUpvote(a.replies || [], answerId) };
         });
     };
 
     const handlePostQuestion = async () => {
+        if (!isOnline) { alert("No internet connection. Please check your network."); return; }
         if (!newQuestion.trim()) return;
         const result = await postQuestion(resource.id, newQuestion, '');
-        if (result.success) {
-            setNewQuestion('');
-            refreshQuestions();
-        } else {
-            alert('Failed to post question: ' + result.error);
-        }
+        if (result.success) { setNewQuestion(''); refreshQuestions(); }
+        else alert('Failed to post question: ' + result.error);
     };
 
     const handlePostAnswer = async (parentId, questionId) => {
+        if (!isOnline) { alert("No internet connection. Please check your network."); return; }
         const answerText = newAnswerTexts[parentId];
         if (!answerText?.trim()) return;
         const actualQuestionId = questionId || parentId;
@@ -295,16 +314,11 @@ function ResourceDetailsImage() {
             setNewAnswerTexts(prev => ({ ...prev, [parentId]: '' }));
             setReplyingTo(null);
             refreshQuestions();
-        } else {
-            alert('Failed to post answer: ' + result.error);
-        }
+        } else alert('Failed to post answer: ' + result.error);
     };
 
     const handleUpvoteAnswer = async (answerId) => {
-        setQuestions(prev => prev.map(q => ({
-            ...q,
-            answers: updateAnswerUpvote(q.answers, answerId)
-        })));
+        setQuestions(prev => prev.map(q => ({ ...q, answers: updateAnswerUpvote(q.answers, answerId) })));
         await upvoteAnswer(answerId);
     };
 
@@ -312,11 +326,7 @@ function ResourceDetailsImage() {
         setQuestions(prev => prev.map(q => {
             if (q.id !== questionId) return q;
             const isUpvoted = q.isUpvoted;
-            return {
-                ...q,
-                isUpvoted: !isUpvoted,
-                upvoteCount: isUpvoted ? q.upvoteCount - 1 : q.upvoteCount + 1
-            };
+            return { ...q, isUpvoted: !isUpvoted, upvoteCount: isUpvoted ? q.upvoteCount - 1 : q.upvoteCount + 1 };
         }));
         await upvoteQuestion(questionId);
     };
@@ -336,9 +346,7 @@ function ResourceDetailsImage() {
     };
 
     const handleViewResource = () => {
-        if (resources.length > 0) {
-            window.open(resources[currentIndex], '_blank');
-        }
+        if (resources.length > 0) window.open(resources[currentIndex], '_blank');
     };
 
     const downloadImagesAsZip = async () => {
@@ -428,10 +436,19 @@ function ResourceDetailsImage() {
                                 <textarea
                                     value={newQuestion}
                                     onChange={(e) => setNewQuestion(e.target.value)}
-                                    placeholder="Ask a question..."
+                                    placeholder={isOnline ? "Ask a question..." : "You're offline. Connect to ask questions."}
                                     className="comment-input"
+                                    disabled={!isOnline}
+                                    style={{ opacity: isOnline ? 1 : 0.6 }}
                                 />
-                                <button onClick={handlePostQuestion} className="submit-button">Post Question</button>
+                                <button
+                                    onClick={handlePostQuestion}
+                                    className="submit-button"
+                                    disabled={!isOnline}
+                                    style={{ opacity: isOnline ? 1 : 0.5 }}
+                                >
+                                    Post Question
+                                </button>
                             </div>
                             <div className="comments-list">
                                 {questions.length > 0 ? (
@@ -450,6 +467,7 @@ function ResourceDetailsImage() {
                                             setReplyingTo={setReplyingTo}
                                             newAnswerTexts={newAnswerTexts}
                                             setNewAnswerTexts={setNewAnswerTexts}
+                                            isOnline={isOnline}
                                         />
                                     ))
                                 ) : (
@@ -464,12 +482,16 @@ function ResourceDetailsImage() {
                             <button
                                 className="generate-ai-notes"
                                 onClick={() => navigate('/generate-ai-notes', { state: { resource } })}
+                                disabled={!isOnline}
+                                style={{ opacity: isOnline ? 1 : 0.5, cursor: isOnline ? 'pointer' : 'not-allowed' }}
                             >
                                 Generate AI Notes
                             </button>
                             <button
                                 className="generate-ai-answers"
                                 onClick={() => navigate('/generate-ai-answer', { state: { resource } })}
+                                disabled={!isOnline}
+                                style={{ opacity: isOnline ? 1 : 0.5, cursor: isOnline ? 'pointer' : 'not-allowed' }}
                             >
                                 Generate AI Answers
                             </button>

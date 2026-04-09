@@ -48,7 +48,7 @@ export const ResourceContextProvider = ({ children }) => {
         try {
             const { data, error } = await supabase
                 .from('resources')
-                .select(`*, profiles(username)`)
+                .select(`*, profiles(username, avatar_seed)`)
                 .order('created_at', { ascending: false });
 
             if (error) throw error;
@@ -63,7 +63,7 @@ export const ResourceContextProvider = ({ children }) => {
         try {
             let query = supabase
                 .from('resources')
-                .select(`*, profiles(username)`);
+                .select(`*, profiles(username, avatar_seed)`);
 
             if (filters.searchQuery) {
                 query = query.or(
@@ -465,6 +465,81 @@ export const ResourceContextProvider = ({ children }) => {
         }
     };
 
+    // Helper function to trigger extraction with retry
+    const triggerExtraction = async (fileUrl, fileType, resourceId, fileId = null, retries = 3) => {
+        for (let attempt = 1; attempt <= retries; attempt++) {
+            try {
+                console.log(`Extraction attempt ${attempt}/${retries} for ${fileUrl}`);
+                
+                const response = await fetch(`${import.meta.env.VITE_APP_SUPABASE_URL}/functions/v1/extract-text`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${import.meta.env.VITE_APP_ANON_KEY}`,
+                    },
+                    body: JSON.stringify({
+                        fileUrl,
+                        fileType,
+                        resourceId,
+                        fileId
+                    })
+                });
+
+                const result = await response.json();
+                console.log('Extraction response:', result);
+
+                if (response.ok && result.success) {
+                    console.log(`✅ Extraction successful for ${fileUrl}`);
+                    return { success: true, result };
+                } else {
+                    console.error(`❌ Extraction failed (attempt ${attempt}):`, result);
+                    if (attempt === retries) {
+                        return { success: false, error: result.error || 'Extraction failed' };
+                    }
+                    // Wait before retry (exponential backoff)
+                    await new Promise(resolve => setTimeout(resolve, attempt * 2000));
+                }
+            } catch (err) {
+                console.error(`❌ Extraction error (attempt ${attempt}):`, err);
+                if (attempt === retries) {
+                    return { success: false, error: err.message };
+                }
+                await new Promise(resolve => setTimeout(resolve, attempt * 2000));
+            }
+        }
+    };
+
+    // Manual extraction trigger for existing resources
+    const retriggerExtraction = async (resourceId) => {
+        try {
+            console.log('Retriggering extraction for resource:', resourceId);
+
+            // Get all files for this resource
+            const { data: files, error: filesError } = await supabase
+                .from('resource_files')
+                .select('*')
+                .eq('resource_id', resourceId);
+
+            if (filesError) throw filesError;
+
+            const results = [];
+            for (const file of files || []) {
+                const result = await triggerExtraction(
+                    file.file_url,
+                    file.file_type,
+                    resourceId,
+                    file.id
+                );
+                results.push({ fileId: file.id, ...result });
+            }
+
+            return { success: true, results };
+        } catch (error) {
+            console.error('Error retriggering extraction:', error);
+            return { success: false, error: error.message };
+        }
+    };
+
     const uploadResource = async ({ title, description, courseCode, year, instructor, resourceType, files, department }) => {
 
         const { data: existingByCombination } = await supabase
@@ -479,38 +554,60 @@ export const ResourceContextProvider = ({ children }) => {
         }
 
         const firstFile = files[0];
-        const firstFileExt = firstFile.name.split('.').pop();
+        const firstFileExt = firstFile.name.split('.').pop().toLowerCase();
         const firstFileName = `${Date.now()}_${Math.random()}_${firstFile.name}`;
 
         const { error: firstFileError } = await supabase.storage.from('resources').upload(firstFileName, firstFile);
-        if (firstFileError) return { success: false, error: firstFileError };
+        if (firstFileError) {
+            console.error('First file upload error:', firstFileError);
+            return { success: false, error: firstFileError.message };
+        }
 
         const { data: { publicUrl } } = supabase.storage.from('resources').getPublicUrl(firstFileName);
-        const firstFileType = firstFileExt === 'pdf' ? 'pdf' : 'image'
+        const firstFileType = firstFileExt === 'pdf' ? 'pdf' : 'image';
+
+        console.log('First file uploaded:', { publicUrl, firstFileType });
 
         const { data: resourceData, error: resourceError } = await supabase
             .from('resources')
             .insert({
-                user_id: session.user.id, title, description,
-                course_code: courseCode, year, instructor,
-                resource_type: resourceType, file_url: publicUrl,
-                file_type: firstFileType, department
+                user_id: session.user.id, 
+                title, 
+                description,
+                course_code: courseCode, 
+                year, 
+                instructor,
+                resource_type: resourceType, 
+                file_url: publicUrl,
+                file_type: firstFileType, 
+                department
             })
             .select().single();
 
-        if (resourceError) return { success: false, error: resourceError };
+        if (resourceError) {
+            console.error('Resource insert error:', resourceError);
+            return { success: false, error: resourceError.message };
+        }
 
         const resourceId = resourceData.id;
+        console.log('Resource created with ID:', resourceId);
+
         const uploadedFiles = [];
+        const extractionResults = [];
 
         for (const file of files) {
             try {
-                const fileExt = file.name.split('.').pop();
-                const fileType = fileExt === 'pdf' ? 'pdf' : 'image'
+                const fileExt = file.name.split('.').pop().toLowerCase();
+                const fileType = fileExt === 'pdf' ? 'pdf' : 'image';
                 const fileName = `${Date.now()}_${Math.random()}_${file.name}`;
 
+                console.log(`Uploading file: ${file.name} (${fileType})`);
+
                 const { error: fileError } = await supabase.storage.from('resources').upload(fileName, file);
-                if (fileError) continue;
+                if (fileError) {
+                    console.error('File upload error:', fileError);
+                    continue;
+                }
 
                 const { data: { publicUrl: fileUrl } } = supabase.storage.from('resources').getPublicUrl(fileName);
 
@@ -519,29 +616,36 @@ export const ResourceContextProvider = ({ children }) => {
                     .insert({ resource_id: resourceId, file_url: fileUrl, file_type: fileType })
                     .select().single();
 
-                if (!fileRefError && fileRef) {
-                    uploadedFiles.push(fileUrl)
-
-                    // Trigger text extraction for each file (non-blocking)
-                    fetch(`${import.meta.env.VITE_APP_SUPABASE_URL}/functions/v1/extract-text`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${import.meta.env.VITE_APP_ANON_KEY}`,
-                        },
-                        body: JSON.stringify({
-                            fileUrl,
-                            fileType,
-                            resourceId,
-                            fileId: fileRef.id
-                        })
-                    }).catch(err => console.error('Extraction error:', err))
+                if (fileRefError) {
+                    console.error('File reference error:', fileRefError);
+                    continue;
                 }
+
+                uploadedFiles.push(fileUrl);
+                console.log(`File uploaded successfully: ${fileUrl}`);
+
+                // Trigger extraction with retry logic
+                const extractionResult = await triggerExtraction(
+                    fileUrl,
+                    fileType,
+                    resourceId,
+                    fileRef.id
+                );
+                
+                extractionResults.push({
+                    fileUrl,
+                    fileId: fileRef.id,
+                    ...extractionResult
+                });
+
             } catch (error) {
-                console.error('Error uploading file:', error);
+                console.error('Error processing file:', error);
             }
         }
 
+        console.log('All extractions completed:', extractionResults);
+
+        // Award points
         const { data: profileData } = await supabase
             .from('profiles')
             .select('points')
@@ -552,20 +656,47 @@ export const ResourceContextProvider = ({ children }) => {
         const pointsToAdd = uploadPointsMap[resourceType] || 20;
 
         const { error: pointsError } = await supabase
-            .from('profiles').update({ points: currentPoints + pointsToAdd }).eq('id', session.user.id);
+            .from('profiles')
+            .update({ points: currentPoints + pointsToAdd })
+            .eq('id', session.user.id);
 
         if (!pointsError) setPoints(currentPoints + pointsToAdd);
 
-        return { success: true, data: resourceData, pointsEarned: pointsToAdd, filesUploaded: uploadedFiles.length };
+        const successfulExtractions = extractionResults.filter(r => r.success).length;
+        const failedExtractions = extractionResults.filter(r => !r.success).length;
+
+        return { 
+            success: true, 
+            data: resourceData, 
+            pointsEarned: pointsToAdd, 
+            filesUploaded: uploadedFiles.length,
+            extractionStats: {
+                successful: successfulExtractions,
+                failed: failedExtractions,
+                total: extractionResults.length
+            },
+            extractionResults
+        };
     };
 
     const value = {
-        uploadResource, searchResources, unlockResource, fetchAllResources,
-        fetchQuestions, postQuestion, postAnswer,
-        upvoteAnswer, upvoteQuestion,
-        deleteQuestion, deleteAnswer,
-        followUser, unfollowUser, checkIfFollowing,
-        unlockedResources, loading,
+        uploadResource, 
+        searchResources, 
+        unlockResource, 
+        fetchAllResources,
+        fetchQuestions, 
+        postQuestion, 
+        postAnswer,
+        upvoteAnswer, 
+        upvoteQuestion,
+        deleteQuestion, 
+        deleteAnswer,
+        followUser, 
+        unfollowUser, 
+        checkIfFollowing,
+        retriggerExtraction,  // NEW: Manual extraction trigger
+        unlockedResources, 
+        loading,
         unlockPointsMap
     };
 

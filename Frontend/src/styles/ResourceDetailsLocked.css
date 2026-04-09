@@ -18,6 +18,18 @@
   margin-bottom: 4px;
 }
 
+div {
+    background-color: transparent
+}
+
+img {
+    background-color: transparent;
+}
+
+h1, h2, h3, p span {
+    background-color: transparent;
+}
+
 p, strong, label {
     background-color: transparent !important;
     color: black

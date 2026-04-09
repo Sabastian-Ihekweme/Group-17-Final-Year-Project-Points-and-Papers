@@ -6,6 +6,18 @@
     width: 100%;
 }
 
+div {
+    background-color: transparent
+}
+
+img {
+    background-color: transparent;
+}
+
+h1, h2, h3, p span {
+    background-color: transparent;
+}
+
 .resource-search h1 {
   font-family: Montserrat; /* Heading */
   font-size: 30px; 
@@ -15,6 +27,9 @@
   margin-bottom: 4px;
 }
 
+.result-note {
+    background-color: transparent;
+}
 
 
 .resource-search .search-bar {
@@ -382,6 +397,8 @@ p, strong, label {
     display: flex;
     flex-direction: column;
     justify-content: center;
+    min-height: 166px;
+    background-color: transparent;
 }
 
 .department, .level, .result-resource .instructor {
@@ -414,6 +431,7 @@ p, strong, label {
   line-height: 20px; 
   font-weight: 400; 
   color: #16A34AFF; 
+  padding-bottom: 20px;
 }
 
 

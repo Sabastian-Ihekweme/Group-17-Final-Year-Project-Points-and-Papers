@@ -23,6 +23,18 @@ p, strong, label {
     color: black
 }
 
+div {
+    background-color: transparent
+}
+
+img {
+    background-color: transparent;
+}
+
+h1, h2, h3, p span {
+    background-color: transparent;
+}
+
 .login-btn {
   width: 187px; 
   height: 40px; 

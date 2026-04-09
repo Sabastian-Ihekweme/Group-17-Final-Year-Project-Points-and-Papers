@@ -1,5 +1,6 @@
 * {
     background-color: white;
+    color: black;
 }
 
 .generate-ai-answer-container {
@@ -9,6 +10,18 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
+}
+
+div {
+    background-color: transparent
+}
+
+img {
+    background-color: transparent;
+}
+
+h1, h2, h3, p span {
+    background-color: transparent;
 }
 
 p, strong, label {
