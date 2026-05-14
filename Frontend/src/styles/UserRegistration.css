@@ -1,1 +1,287 @@
+.user-registration {
+   display: flex;
+
+   height: 800px;
+   width: 100%;
+   text-align: center;
+   align-items: center;
+   margin-top: 30px;
+   gap: 100px;
+}
+
+.registration-container {
+ display: flex;
+   justify-content: center;
+   flex-direction: column;
+   width: 95%;
+   margin-left: 20px;
+   text-align: center;
+   justify-content: center;
+}
+
+.user-registration h2 {
+ margin-top: 10px;
+ margin-bottom: 15px;
+ width: 100%;
+}
+
+p, strong, label {
+   background-color: transparent !important;
+   color: black
+}
+
+.user-registration p {
+ margin-top: 10px;
+ margin-bottom: 30px;
+ color: black;
+}
+
+.user-registration input {
+ color: black;
+}
+
+
+.logo-title {
+   display: flex;
+   align-items: center;
+   gap: 10px;
+}
+
+.logo {
+   width: 48px;
+   height: 48px;
+}
+
+h1 {
+ font-size: 31px;
+ line-height: 31px;
+ font-weight: 700;
+ color: #1F9EF9FF;
+ font-family: montserrat;
+}
+
+h2 {
+ font-family: Montserrat; /* Heading */
+ font-size: 30px;
+ line-height: 36px;
+ font-weight: 700;
+ color: #1A1A1AFF;
+}
+
+.user-registration p {
+ font-family: Open Sans; /* Body */
+ font-size: 14px;
+ line-height: 20px;
+ font-weight: 400;
+ color: #5F5F5FFF;
+}
+
+form {
+   width: 90%;
+   display: flex;
+   flex-direction: column;
+   justify-content: center;
+}
+
+.textbox {
+   text-align: left;
+   display: flex;
+   margin-bottom: 10px;
+   flex-direction: column;
+}
+
+.label {
+ font-family: Open Sans;
+ font-size: 14px;
+ line-height: 22px;
+ font-weight: 500;
+ margin-bottom: 5px;
+}
+
+.registration-container input, .login-container input {
+ width: 340px;
+ height: 49px;
+ padding-left: 12px;
+ padding-right: 12px;
+ font-family: Open Sans;
+ font-size: 14px;
+ line-height: 22px;
+ font-weight: 400;
+ background: #FFFFFFFF; /* white */
+ border-radius: 6px;
+ border-width: 1px;
+ border-color: #E1E1E1FF;
+ border-style: solid;
+ outline: none;
+}
+
+.user-login {
+ height: 800px;
+ display: flex;
+ flex-direction: column;
+ justify-content: center;
+}
+
+.textbox select {
+ width: 340px;
+ height: 49px;
+ padding-left: 12px;
+ padding-right: 34px;
+ font-family: Open Sans;
+ font-size: 14px;
+ line-height: 22px;
+ font-weight: 400;
+ color: #1A1A1AFF;
+ background: #FFFFFFFF; /* white */
+ opacity: 1;
+ border-radius: 6px;
+ border-width: 1px;
+ border-color: #E1E1E1FF;
+ border-style: solid;
+ outline: none;
+}
+
+
+.register-btn {
+ width: 187px;
+ height: 40px;
+ padding: 0 12px;
+ display: flex;
+ align-items: center;
+ justify-content: center;
+ font-family: Open Sans;
+ font-size: 14px;
+ line-height: 22px;
+ font-weight: 500;
+ color: #FFFFFFFF; /* white */
+ background: #1F9EF9FF;
+ opacity: 1;
+ border: none;
+ border-radius: 6px;
+ margin-top: 40px;
+ margin-bottom: 10px;
+}
+
+.register-btn:hover {
+ color: #FFFFFFFF; /* white */
+ background: #0568B0FF;
+}
+
+.register-btn:hover:active {
+ color: #FFFFFFFF; /* white */
+ background: #035088FF;
+}
+
+.login-link {
+ font-family: Open Sans; /* Body */
+ font-size: 14px;
+ line-height: 20px;
+ font-weight: 400;
+ color: #5F5F5FFF;
+}
+
+
+
+
+.landing-page-design {
+   display: none;
+}
+
+
+
+
+@media (min-width: 768px) {
+
+
+   .user-registration {
+       width: 100%;
+       align-items: center;
+       gap: 30px;
+   }
+
+   .logo-title {
+     margin-left: 60px;
+   }
+
+   .registration-container {
+       margin-left: 300px;
+       display: flex;
+       flex-direction: column;
+       justify-content: center;
+   }
+
+   form {
+     display: flex;
+     flex-direction: column;
+     justify-content: left;
+   }
+
+   .textbox select {
+     width: 400px;
+   }
+
+   .register-btn {
+   }
+
+   .landing-page-design {
+       display: block;
+       width: 448px;
+       height: 448px;
+       align-self: center;
+   }
+
+     .registration-container input, .login-container input {
+     width: 448px;
+     height: 49px;
+     padding-left: 12px;
+     padding-right: 12px;
+     font-family: Open Sans;
+     font-size: 14px;
+     line-height: 22px;
+     font-weight: 400;
+     background: #FFFFFFFF; /* white */
+     border-radius: 6px;
+     border-width: 1px;
+     border-color: #E1E1E1FF;
+     border-style: solid;
+     outline: none;
+   }
+
+       .textbox select {
+     width: 448px;
+     height: 49px;
+     padding-left: 12px;
+     padding-right: 34px;
+     font-family: Open Sans;
+     font-size: 14px;
+     line-height: 22px;
+     font-weight: 400;
+     color: #1A1A1AFF;
+     background: #FFFFFFFF; /* white */
+     opacity: 1;
+     border-radius: 6px;
+     border-width: 1px;
+     border-color: #E1E1E1FF;
+     border-style: solid;
+     outline: none;
+   }
+
+
+}
+
+div {
+   background-color: transparent
+}
+
+img {
+   background-color: transparent;
+}
+
+h1, h2, h3, p span {
+   background-color: transparent;
+}
+
+
+
+
 
