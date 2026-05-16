@@ -1,1 +1,314 @@
+* {
+   background-color: white;
+   color: black;
+}
+
+
+.generate-ai-answer-container {
+   margin-top: 100px;
+   margin-left: 20px;
+   display: flex;
+   flex-direction: column;
+   align-items: center;
+   justify-content: center;
+}
+
+
+p, strong, label {
+   background-color: transparent !important;
+   color: black;
+}
+
+
+.generate-ai-answer-container h1 {
+   font-family: Montserrat;
+   font-size: 30px;
+   line-height: 36px;
+   font-weight: 700;
+   color: #1A1A1AFF;
+}
+
+
+.generate-ai-answer-container h2 {
+   width: 343px;
+   font-family: Open Sans;
+   font-size: 18px;
+   line-height: 28px;
+   font-weight: 400;
+   color: #5F5F5FFF;
+   margin-top: 27px;
+}
+
+
+.generate-ai-answer-container .resource-details {
+   width: 343px;
+   background: #FFFFFFFF;
+   border-radius: 8px;
+   box-shadow: 0px 0px 1px #171a1f14, 0px 0px 2px #171a1f14;
+   margin-top: 16px;
+   display: flex;
+   flex-direction: column;
+   align-items: flex-start;
+   justify-content: flex-start;
+   padding-bottom: 16px;
+}
+
+
+.generate-ai-answer-container .resource-details h3 {
+   font-family: Open Sans;
+   font-size: 18px;
+   line-height: 28px;
+   font-weight: 600;
+   color: #1A1A1AFF;
+   margin-bottom: 10px;
+   margin-top: 22px;
+   margin-left: 16px;
+   margin-right: 16px;
+}
+
+
+.generate-ai-answer-container .resource-details a {
+   padding: 0 16px;
+   display: flex;
+   align-items: center;
+   font-family: Open Sans;
+   font-size: 14px;
+   line-height: 22px;
+   font-weight: 500;
+   color: #1F9EF9FF;
+   background: transparent;
+   border: none;
+   cursor: pointer;
+   margin-top: 4px;
+   margin-bottom: 8px;
+}
+
+
+.generate-ai-answer-container .resource-details p {
+   font-family: Open Sans;
+   font-size: 14px;
+   line-height: 20px;
+   font-weight: 400;
+   color: #5F5F5FFF;
+   margin-left: 16px;
+   margin-right: 16px;
+}
+
+
+.question-for-ai {
+   width: 343px;
+   background: #FFFFFFFF;
+   border-radius: 8px;
+   box-shadow: 0px 0px 1px #171a1f14, 0px 0px 2px #171a1f14;
+   display: flex;
+   flex-direction: column;
+   justify-content: start;
+   padding-bottom: 16px;
+}
+
+
+.question-for-ai h2 {
+   font-family: Open Sans;
+   font-size: 18px;
+   line-height: 28px;
+   font-weight: 600;
+   color: #1A1A1AFF;
+   margin-top: 42px;
+   margin-left: 16px;
+   margin-bottom: 10px;
+}
+
+
+.question-for-ai label {
+   margin-top: 10px;
+   margin-left: 16px;
+   font-family: Open Sans;
+   font-size: 14px;
+   line-height: 22px;
+   font-weight: 500;
+}
+
+
+.question-for-ai textarea {
+   width: 309px;
+   height: 170px;
+   padding: 7px 12px;
+   font-family: Open Sans;
+   font-size: 14px;
+   line-height: 22px;
+   font-weight: 400;
+   color: #5F5F5FFF;
+   background: #FFFFFFFF;
+   border-radius: 6px;
+   border-width: 1px;
+   border-color: #E1E1E1FF;
+   border-style: solid;
+   resize: none;
+   outline: none;
+   margin-left: 16px;
+}
+
+
+.question-for-ai button {
+   width: 190px;
+   height: 40px;
+   padding: 0 12px;
+   display: flex;
+   align-items: center;
+   justify-content: center;
+   font-family: Open Sans;
+   font-size: 14px;
+   line-height: 22px;
+   font-weight: 500;
+   color: #FFFFFFFF;
+   background: #1F9EF9FF;
+   border: none;
+   border-radius: 6px;
+   margin-top: 16px;
+   margin-left: 16px;
+   cursor: pointer;
+}
+
+
+.question-for-ai button:hover { background: #0568B0FF; }
+
+
+.ai-generated-answer {
+   width: 343px;
+   min-height: 235px;
+   background: #FFFFFFFF;
+   border-radius: 8px;
+   box-shadow: 0px 0px 1px #171a1f14, 0px 0px 2px #171a1f14;
+   margin-top: 27px;
+   display: flex;
+   flex-direction: column;
+   align-items: center;
+   margin-bottom: 50px;
+   padding-bottom: 20px;
+}
+
+
+.ai-generated-answer h3 {
+   font-family: Open Sans;
+   font-size: 18px;
+   line-height: 28px;
+   font-weight: 600;
+   color: #1A1A1AFF;
+   margin-top: 42px;
+   margin-left: 16px;
+   margin-bottom: 10px;
+   width: 100%;
+   text-align: left;
+   padding-left: 16px;
+   box-sizing: border-box;
+}
+
+
+.ai-generated-answer .ai-text-container {
+   width: calc(100% - 32px);
+   min-height: 80px;
+   height: auto;
+   background: #F9F9F933;
+   border-radius: 6px;
+   border-width: 1px;
+   border-color: #F4F4F4FF;
+   border-style: solid;
+   overflow: hidden;
+   box-sizing: border-box;
+}
+
+
+.ai-generated-answer .ai-text-container .text {
+   width: 100%;
+   font-family: Open Sans;
+   font-size: 15px;
+   line-height: 24px;
+   font-weight: 400;
+   color: #5F5F5FFF;
+   padding: 16px;
+   box-sizing: border-box;
+   word-wrap: break-word;
+   overflow-wrap: break-word;
+   white-space: pre-wrap;
+}
+
+
+@media (min-width: 764px) {
+   .generate-ai-answer-container {
+       width: 1130px;
+       margin-left: 300px;
+       display: flex;
+       flex-direction: column;
+       align-items: start;
+   }
+
+
+   .generate-ai-answer-container h1 {
+       margin-top: 10px;
+       margin-left: 30px;
+   }
+
+
+   .generate-ai-answer-container h2 {
+       width: 100%;
+       margin-left: 30px;
+   }
+
+
+   .generate-ai-answer-container .resource-details,
+   .generate-ai-answer-container .ai-generated-answer {
+       width: 1056px;
+       align-items: start;
+       margin-left: 30px;
+       min-height: auto;
+   }
+
+
+   .generate-ai-answer-container .resource-details h3,
+   .generate-ai-answer-container .resource-details a,
+   .generate-ai-answer-container .resource-details p,
+   .question-for-ai label,
+   .generate-ai-answer-container .ai-generated-answer h3 {
+       width: 100%;
+       text-align: start;
+       padding-left: 16px;
+       margin-left: 0;
+   }
+
+
+   .question-for-ai {
+       align-items: start;
+       margin-left: 30px;
+       width: 1056px;
+   }
+
+
+   .question-for-ai textarea {
+       width: calc(100% - 32px);
+       margin-left: 16px;
+   }
+
+
+   .question-for-ai button {
+       margin-left: 16px;
+       width: calc(100% - 32px);
+   }
+
+
+   .generate-ai-answer-container .ai-generated-answer .ai-text-container {
+       width: calc(100% - 32px);
+       margin-left: 16px;
+       height: auto;
+       min-height: 80px;
+   }
+
+
+   .generate-ai-answer-container .ai-generated-answer .ai-text-container .text {
+       width: 100%;
+       padding: 16px;
+       word-wrap: break-word;
+       overflow-wrap: break-word;
+   }
+}
+
 
