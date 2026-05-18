@@ -1,1 +1,366 @@
+.ai-notes-container {
+   display: flex;
+   flex-direction: column;
+   text-align: center;
+   margin-top: 15px;
+}
+
+
+.page-title {
+   display: flex;
+   flex-direction: column;
+   gap: 2px;
+}
+
+
+p, strong, label {
+   background-color: transparent !important;
+   color: black;
+}
+
+
+.page-title h1 {
+   font-family: Montserrat;
+   font-size: 30px;
+   line-height: 36px;
+   font-weight: 700;
+   color: #1A1A1AFF;
+}
+
+
+.page-title p {
+   width: 362px;
+   font-family: Open Sans;
+   font-size: 16px;
+   line-height: 24px;
+   font-weight: 400;
+   color: #5F5F5FFF;
+}
+
+
+/* Resource details card */
+.ai-notes-container .resource-details {
+   display: flex;
+   flex-direction: column;
+   gap: 4px;
+   margin-top: 8px;
+   margin-bottom: 0;
+   text-align: left;
+   padding: 10px 16px;
+   background: #F9F9F9;
+   border-radius: 6px;
+   border: 1px solid #E1E1E1;
+   align-self: center;
+   width: calc(100% - 32px);
+   max-width: 362px;
+   box-sizing: border-box;
+}
+
+
+.ai-notes-container .resource-details h3 {
+   font-family: Montserrat;
+   font-size: 15px;
+   font-weight: 600;
+   color: #1A1A1A;
+   margin: 0;
+   background: transparent;
+}
+
+
+.ai-notes-container .resource-details a {
+   font-family: Open Sans;
+   font-size: 13px;
+   color: #1F9EF9;
+}
+
+
+.ai-notes-container .resource-details p {
+   font-family: Open Sans;
+   font-size: 13px;
+   color: #5F5F5F !important;
+   margin: 0;
+}
+
+
+.note-generation-control {
+   margin-top: 16px;
+   width: 362px;
+   display: flex;
+   flex-direction: column;
+   align-items: center;
+}
+
+
+.note-generation-control h2 {
+   font-family: Montserrat;
+   font-size: 24px;
+   line-height: 32px;
+   font-weight: 700;
+   color: #1A1A1AFF;
+}
+
+
+.resource-context-div {
+   display: flex;
+   flex-direction: column;
+   text-align: left;
+   width: 293px;
+}
+
+
+.resource-context-div textarea {
+   margin-top: 9px;
+   height: 160px;
+   background: #FFFFFFFF;
+   border-radius: 6px;
+   border-width: 1px;
+   border-color: #E1E1E1FF;
+   border-style: solid;
+   resize: none;
+   outline: none;
+   color: #5F5F5FFF;
+   padding-left: 12px;
+   padding-right: 12px;
+   padding-top: 9px;
+   font-family: Open Sans;
+   font-size: 15px;
+   font-weight: bold;
+}
+
+
+.resource-context-div .resource-context-label {
+   font-family: Montserrat;
+   font-size: 18px;
+   line-height: 28px;
+   font-weight: 600;
+   color: #1A1A1AFF;
+   margin-top: 18px;
+}
+
+
+.note-length-div {
+   width: 362px;
+   margin-top: 24px;
+   display: flex;
+   flex-direction: column;
+   text-align: left;
+}
+
+
+.note-length-div .note-length-label {
+   font-family: Montserrat;
+   font-size: 18px;
+   line-height: 28px;
+   font-weight: 600;
+   color: #1A1A1AFF;
+   margin-left: 31px;
+}
+
+
+.note-length-slider-labels {
+   margin-top: 24px;
+   display: flex;
+   gap: 194px;
+   font-family: Open Sans;
+   font-size: 14px;
+   line-height: 20px;
+   font-weight: 400;
+   color: #5F5F5FFF;
+   margin-left: 36px;
+   margin-bottom: 15px;
+}
+
+
+.note-length-range {
+   width: 305px;
+   height: 14px;
+   display: flex;
+   align-items: center;
+   justify-content: space-evenly;
+   opacity: 1;
+   border-color: #1F9EF9FF;
+   margin-left: 36px;
+}
+
+
+.format-style-div {
+   width: 362px;
+   display: flex;
+   flex-direction: column;
+   text-align: left;
+   margin-top: 24px;
+}
+
+
+.format-style-label {
+   margin-left: 30px;
+   font-family: Montserrat;
+   font-size: 18px;
+   line-height: 28px;
+   font-weight: 600;
+   color: #1A1A1AFF;
+   margin-bottom: 15px;
+}
+
+
+.format-style-options {
+   gap: 9px;
+   display: flex;
+   flex-direction: column;
+   margin-left: 35px;
+   color: #171A1FFF;
+   opacity: 1;
+   font-family: Open Sans;
+   font-size: 14px;
+   line-height: 22px;
+}
+
+
+.note-generation-control button {
+   width: 236px;
+   height: 40px;
+   padding: 0 12px;
+   display: flex;
+   align-items: center;
+   justify-content: center;
+   font-family: Open Sans;
+   font-size: 14px;
+   line-height: 22px;
+   font-weight: 500;
+   color: #FFFFFFFF;
+   background: #1F9EF9FF;
+   opacity: 1;
+   border: none;
+   border-radius: 6px;
+   margin-top: 38px;
+   margin-bottom: 41px;
+   cursor: pointer;
+}
+
+
+.notes-preview {
+   margin-top: 16px;
+   display: flex;
+   flex-direction: column;
+   width: 362px;
+   text-align: center;
+   justify-content: center;
+   align-items: center;
+}
+
+
+.notes-preview h2 {
+   margin-top: 20px;
+   margin-bottom: 15px;
+}
+
+
+.notes-preview textarea {
+   width: 293px;
+   height: 424px;
+   padding-top: 7px;
+   padding-bottom: 7px;
+   padding-left: 12px;
+   padding-right: 12px;
+   font-family: Open Sans;
+   font-size: 14px;
+   line-height: 22px;
+   font-weight: 400;
+   color: #1A1A1AFF;
+   background: #FFFFFFFF;
+   border-radius: 6px;
+   border-width: 1px;
+   border-color: #E1E1E1FF;
+   border-style: solid;
+   resize: none;
+   pointer-events: none;
+   user-select: none;
+}
+
+
+.notes-preview button {
+   width: 244px;
+   height: 40px;
+   padding: 0 12px;
+   display: flex;
+   align-items: center;
+   justify-content: center;
+   font-family: Open Sans;
+   font-size: 14px;
+   line-height: 22px;
+   font-weight: 500;
+   color: #FFFFFFFF;
+   background: #1F9EF9FF;
+   opacity: 1;
+   border: none;
+   border-radius: 6px;
+   margin-top: 24px;
+   margin-bottom: 40px;
+   cursor: pointer;
+}
+
+
+@media (min-width: 768px) {
+   .ai-notes-container {
+       width: 100%;
+   }
+
+
+   .page-title {
+       margin-left: 450px;
+       text-align: left;
+       gap: 26px;
+   }
+
+
+   .page-title h1 { text-align: left; }
+
+
+   .page-title p { width: 100%; }
+
+
+   .ai-notes-container .resource-details {
+       margin-left: 450px;
+       max-width: 700px;
+       align-self: flex-start;
+   }
+
+
+   .ai-notes-container .divs {
+       margin-left: 400px;
+       width: 1200px;
+       display: flex;
+   }
+
+
+   .note-generation-control {
+       text-align: left;
+       width: 512px;
+       height: auto;
+       min-height: 616px;
+       border-radius: 8px;
+       box-shadow: 0px 0px 1px #171a1f14, 0px 0px 2px #171a1f14;
+   }
+
+
+   .note-generation-control h2 { margin-top: 40px; }
+
+
+   .resource-context-div, .note-length-div, .format-style-div {
+       width: 90%;
+   }
+
+
+   .notes-preview {
+       text-align: left;
+       width: 512px;
+       height: auto;
+       min-height: 616px;
+       border-radius: 8px;
+       box-shadow: 0px 0px 1px #171a1f14, 0px 0px 2px #171a1f14;
+   }
+
+
+   .notes-preview textarea { width: 90%; }
+}
 
