@@ -21,6 +21,9 @@ export const ResourceContextProvider = ({ children }) => {
         'report/essay': 15
     }
 
+    // Resource types that skip text extraction entirely
+    const SKIP_EXTRACTION_TYPES = ['final year project'];
+
     useEffect(() => {
         if (session?.user?.id) {
             fetchUnlockedResources();
@@ -465,24 +468,20 @@ export const ResourceContextProvider = ({ children }) => {
         }
     };
 
-    // Helper function to trigger extraction with retry
+    // ─── Text Extraction ──────────────────────────────────────────────────────
+
     const triggerExtraction = async (fileUrl, fileType, resourceId, fileId = null, retries = 3) => {
         for (let attempt = 1; attempt <= retries; attempt++) {
             try {
                 console.log(`Extraction attempt ${attempt}/${retries} for ${fileUrl}`);
-                
+
                 const response = await fetch(`${import.meta.env.VITE_APP_SUPABASE_URL}/functions/v1/extract-text`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${import.meta.env.VITE_APP_ANON_KEY}`,
                     },
-                    body: JSON.stringify({
-                        fileUrl,
-                        fileType,
-                        resourceId,
-                        fileId
-                    })
+                    body: JSON.stringify({ fileUrl, fileType, resourceId, fileId })
                 });
 
                 const result = await response.json();
@@ -490,13 +489,12 @@ export const ResourceContextProvider = ({ children }) => {
 
                 if (response.ok && result.success) {
                     console.log(`✅ Extraction successful for ${fileUrl}`);
-                    return { success: true, result };
+                    return { success: true, result, extractedText: result.extractedText || result.text || '' };
                 } else {
                     console.error(`❌ Extraction failed (attempt ${attempt}):`, result);
                     if (attempt === retries) {
                         return { success: false, error: result.error || 'Extraction failed' };
                     }
-                    // Wait before retry (exponential backoff)
                     await new Promise(resolve => setTimeout(resolve, attempt * 2000));
                 }
             } catch (err) {
@@ -509,12 +507,155 @@ export const ResourceContextProvider = ({ children }) => {
         }
     };
 
-    // Manual extraction trigger for existing resources
+    // -- LLM Validation --
+
+    const validateResourceWithLLM = async ({ extractedText, resourceType, title, courseCode, year, instructor, department }) => {
+        try {
+            const isExam = resourceType === 'midterm exam' || resourceType === 'final exam';
+
+            const validationQuestion = isExam
+                ? buildExamValidationPrompt({ extractedText, resourceType, title, courseCode, year, instructor, department })
+                : buildGeneralValidationPrompt({ extractedText, resourceType, title, courseCode, year, instructor, department });
+
+            const response = await fetch(`${import.meta.env.VITE_APP_SUPABASE_URL}/functions/v1/ai-proxy`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${import.meta.env.VITE_APP_ANON_KEY}`,
+                },
+                body: JSON.stringify({
+                    question: validationQuestion,
+                    resource: { id: 'validation', title, course_code: courseCode },
+                    files: []
+                })
+            });
+
+            const data = await response.json();
+            const rawText = (data.text || '').trim();
+            console.log('[Validation] ai-proxy raw response:', rawText);
+
+            const cleaned = rawText.replace(/```json|```/g, '').trim();
+            const parsed = JSON.parse(cleaned);
+
+            return parsed;
+        } catch (err) {
+            console.error('[Validation] Validation error:', err);
+            // Fail open on network errors only — don't block legitimate uploads
+            return { valid: true };
+        }
+    };
+
+    /**
+     * STRICT prompt for midterm and final exams.
+     * ALL metadata fields must be verifiable in the document.
+     */
+    const buildExamValidationPrompt = ({ extractedText, resourceType, title, courseCode, year, instructor, department }) => {
+        const isMidterm = resourceType === 'midterm exam';
+        const isFinal = resourceType === 'final exam';
+
+        const midtermKeywords = ['midterm', 'mid-term', 'mid term', 'mid-semester', 'mid semester', 'midsemester', 'continuous assessment', 'c.a.', 'test 1', 'test 2', 'first test', 'second test', '1st test', '2nd test'];
+        const finalKeywords = ['final', 'final examination', 'final exam', 'end of semester', 'end-of-semester', 'end of year', 'semester examination', 'annual examination', 'examination'];
+
+        return `You are a STRICT document validator for Points & Papers, an academic resource sharing platform for Nile University of Nigeria.
+
+A user submitted an exam paper and provided this metadata:
+- Resource Type: ${resourceType.toUpperCase()}
+- Title: "${title}"
+- Course Code: ${courseCode}
+- Academic Year: ${year}
+- Instructor: ${instructor}
+- Department: ${department || 'Not specified'}
+
+Here is the extracted text from the document:
+---
+${extractedText.slice(0, 3000)}
+---
+
+You must validate EVERY check below. Fail on the FIRST one that does not pass.
+
+=== CHECK 1: EXAM TYPE (STRICT — most critical) ===
+Midterm keywords: ${midtermKeywords.join(', ')}
+Final exam keywords: ${finalKeywords.join(', ')}
+
+- The user selected "${resourceType.toUpperCase()}".
+- If they selected "midterm exam" and the document contains ANY final exam keyword → REJECT.
+- If they selected "final exam" and the document contains ANY midterm keyword → REJECT.
+- If BOTH types appear, reject — the document is ambiguous or mismatched.
+- If NEITHER type appears AND the document looks like an academic exam (questions, instructions, marks), accept on this check only.
+- A single unambiguous keyword mismatch is enough to reject. No benefit of the doubt.
+
+=== CHECK 2: COURSE CODE ===
+The user entered course code: "${courseCode}"
+- Look for this course code (or a very close variant, e.g. spacing or dash differences) anywhere in the document.
+- If a DIFFERENT course code clearly appears in the document header → REJECT.
+- If no course code appears at all in the document, accept on this check (some scanned papers omit it).
+
+=== CHECK 3: INSTRUCTOR NAME ===
+The user entered instructor: "${instructor}"
+- Look for this name (or a partial match — last name is enough) anywhere in the document.
+- If a CLEARLY DIFFERENT instructor name appears in the document → REJECT.
+- If no instructor name appears at all in the document, accept on this check (many exam papers omit it).
+
+=== CHECK 4: ACADEMIC YEAR ===
+The user entered year: "${year}"
+- Look for this year or session (e.g. "2023", "2023/2024", "2022/23") in the document.
+- If a CLEARLY DIFFERENT year appears prominently in the document → REJECT.
+- If no year appears at all in the document, accept on this check.
+
+=== CHECK 5: DOCUMENT IS AN ACTUAL EXAM ===
+- The document must look like an exam paper: it should contain questions, instructions, marks/scores, or similar academic exam content.
+- If the document is clearly something else entirely (a textbook chapter, a news article, a CV, a receipt, etc.) → REJECT.
+- Be lenient with format: handwritten answers, scanned booklets, and non-standard layouts are acceptable.
+
+=== IMPORTANT NOTES ===
+- OCR errors are common in scanned documents. Minor spelling differences in names or codes are acceptable.
+- Do NOT reject purely because the university name is absent — many Nile University papers do not state it explicitly.
+- Be strict on MISMATCHES (wrong data present), lenient on ABSENCE (data simply not found).
+
+Respond with ONLY a raw JSON object — no markdown, no code fences, nothing else:
+{"valid": true}
+OR
+{"valid": false, "reason": "One concise sentence that names the specific mismatch and includes the actual values found. Examples: \"You selected Final Exam but the document appears to be a Midterm — it contains the phrase mid-semester test.\" or \"You entered course code SEN401 but the document header shows SEN301.\" or \"You entered instructor Dr. Ahmed but the document shows Prof. Usman.\" or \"The uploaded file does not appear to be an exam — it looks like a Software Architecture lecture note.\""}`;
+    };
+
+    /**
+     * Lenient prompt for non-exam types (FYP, report/essay, lecture note, etc.)
+     */
+    const buildGeneralValidationPrompt = ({ extractedText, resourceType, title, courseCode, year, instructor, department }) => {
+        return `You are a document validator for Points & Papers, an academic resource sharing platform for Nile University of Nigeria students.
+
+A user uploaded a document with the following metadata:
+- Resource Type: ${resourceType}
+- Title: "${title}"
+- Course Code: ${courseCode}
+- Academic Year: ${year}
+- Instructor: ${instructor}
+- Department: ${department || 'Not specified'}
+
+Here is the extracted text from the document (first 3000 characters):
+---
+${extractedText.slice(0, 3000)}
+---
+
+Validation rules (be LENIENT — only reject obvious fraud):
+1. The document should be broadly consistent with the selected resource type.
+2. Course code, instructor name, and year do NOT need to appear in the document — they are user-supplied metadata.
+3. Only reject if the document is clearly and completely wrong (e.g. a cooking recipe, a social media post, random gibberish).
+4. OCR errors, handwriting, and non-standard formatting should be given benefit of the doubt.
+
+Respond with ONLY a raw JSON object — no markdown, no code fences, nothing else:
+{"valid": true}
+OR
+{"valid": false, "reason": "One concise sentence naming what the document actually appears to be. Example: \"The uploaded file does not look like a report or essay — it appears to be a Final Exam paper for Database Management.\""}`;
+    };
+
+
+    // ─── Manual Re-extraction ─────────────────────────────────────────────────
+
     const retriggerExtraction = async (resourceId) => {
         try {
             console.log('Retriggering extraction for resource:', resourceId);
 
-            // Get all files for this resource
             const { data: files, error: filesError } = await supabase
                 .from('resource_files')
                 .select('*')
@@ -540,19 +681,29 @@ export const ResourceContextProvider = ({ children }) => {
         }
     };
 
+    // ─── Upload Resource ──────────────────────────────────────────────────────
+
     const uploadResource = async ({ title, description, courseCode, year, instructor, resourceType, files, department }) => {
 
+        const skipExtraction = SKIP_EXTRACTION_TYPES.includes(resourceType);
+
+        // ── Duplicate check — only reject if Course Code + Year + Instructor all match ──
         const { data: existingByCombination } = await supabase
-            .from('resources').select('id')
-            .eq('course_code', courseCode).eq('instructor', instructor).eq('year', year).limit(1);
+            .from('resources')
+            .select('id')
+            .eq('course_code', courseCode)
+            .eq('year', year)
+            .eq('instructor', instructor)
+            .limit(1);
 
-        const { data: existingByTitle } = await supabase
-            .from('resources').select('id').eq('title', title).limit(1);
-
-        if ((existingByCombination && existingByCombination.length > 0) || (existingByTitle && existingByTitle.length > 0)) {
-            return { success: false, error: 'Resource already exists' };
+        if (existingByCombination && existingByCombination.length > 0) {
+            return {
+                success: false,
+                error: 'A resource with the same Course Code, Academic Year, and Instructor already exists.'
+            };
         }
 
+        // ── Upload first file to get a public URL for the resource row ───────
         const firstFile = files[0];
         const firstFileExt = firstFile.name.split('.').pop().toLowerCase();
         const firstFileName = `${Date.now()}_${Math.random()}_${firstFile.name}`;
@@ -568,30 +719,155 @@ export const ResourceContextProvider = ({ children }) => {
 
         console.log('First file uploaded:', { publicUrl, firstFileType });
 
+        // ── Create the resource row ──────────────────────────────────────────
         const { data: resourceData, error: resourceError } = await supabase
             .from('resources')
             .insert({
-                user_id: session.user.id, 
-                title, 
+                user_id: session.user.id,
+                title,
                 description,
-                course_code: courseCode, 
-                year, 
+                course_code: courseCode,
+                year,
                 instructor,
-                resource_type: resourceType, 
+                resource_type: resourceType,
                 file_url: publicUrl,
-                file_type: firstFileType, 
+                file_type: firstFileType,
                 department
             })
             .select().single();
 
         if (resourceError) {
-            console.error('Resource insert error:', resourceError);
+            // Supabase CHECK constraint violation — resource_type value not allowed in DB
+            if (resourceError.code === '23514') {
+                const userFacingMessage =
+                    `The resource type "${resourceType}" is not recognised by the database. ` +
+                    `Please contact support or choose a different type.`;
+                console.error(
+                    `[Upload] ❌ DB CHECK constraint failed for resource_type "${resourceType}".\n` +
+                    `         The value is not in the allowed list on the "resources" table.\n` +
+                    `         Fix: run the following in your Supabase SQL editor and add "${resourceType}" to the list:\n\n` +
+                    `         ALTER TABLE resources DROP CONSTRAINT resources_resource_type_check;\n` +
+                    `         ALTER TABLE resources ADD CONSTRAINT resources_resource_type_check\n` +
+                    `           CHECK (resource_type IN ('midterm exam', 'final exam', 'report/essay', 'final year project', 'lecture note', 'assignment', 'other'));\n\n` +
+                    `         Supabase error:`, resourceError
+                );
+                return { success: false, error: userFacingMessage };
+            }
+
+            console.error(
+                `[Upload] ❌ Resource insert failed (code: ${resourceError.code}):\n`,
+                resourceError
+            );
             return { success: false, error: resourceError.message };
         }
 
         const resourceId = resourceData.id;
         console.log('Resource created with ID:', resourceId);
 
+        // -- Final year projects: upload all files, extract FIRST FILE ONLY for LLM verification --
+        if (skipExtraction) {
+            console.log(`[Upload] FYP detected — uploading all files, extracting first file only for verification.`);
+
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                try {
+                    const fileExt = file.name.split('.').pop().toLowerCase();
+                    const fileType = fileExt === 'pdf' ? 'pdf' : 'image';
+                    const fileName = `${Date.now()}_${Math.random()}_${file.name}`;
+
+                    const { error: fileError } = await supabase.storage.from('resources').upload(fileName, file);
+                    if (fileError) { console.error('File upload error:', fileError); continue; }
+
+                    const { data: { publicUrl: fileUrl } } = supabase.storage.from('resources').getPublicUrl(fileName);
+
+                    const { data: fileRef, error: fileRefError } = await supabase
+                        .from('resource_files')
+                        .insert({ resource_id: resourceId, file_url: fileUrl, file_type: fileType })
+                        .select().single();
+
+                    if (fileRefError) { console.error('File reference error (FYP):', fileRefError); continue; }
+
+                    // Only trigger extraction on the first file — used purely for verification
+                    if (i === 0) {
+                        console.log(`[Upload] FYP — triggering extraction on first file: ${fileUrl}`);
+                        await triggerExtraction(fileUrl, fileType, resourceId, fileRef.id);
+                    }
+                } catch (err) {
+                    console.error('Error processing file (FYP):', err);
+                }
+            }
+
+            // Read extracted text from DB — trim to first ~500 words for LLM
+            const { data: fypExtractedFiles } = await supabase
+                .from('resource_files')
+                .select('extracted_text')
+                .eq('resource_id', resourceId)
+                .not('extracted_text', 'is', null)
+                .order('id', { ascending: true })
+                .limit(1);
+
+            const fypRawText = fypExtractedFiles?.[0]?.extracted_text?.trim() || '';
+            console.log(`[Upload] FYP extracted text length: ${fypRawText.length} characters`);
+
+            if (!fypRawText) {
+                console.warn('[Upload] FYP — no text extracted, rejecting upload.');
+                await supabase.from('resources').delete().eq('id', resourceId);
+                return {
+                    success: false,
+                    error: 'We were unable to extract text from your document. Please ensure the file is a readable PDF or clear image and try again.'
+                };
+            }
+
+            // Limit to first 500 words before sending to LLM
+            const fypTextForValidation = fypRawText.split(/\s+/).slice(0, 500).join(' ');
+            console.log(`[Upload] FYP — running LLM validation on first 500 words (${fypTextForValidation.split(/\s+/).length} words)...`);
+
+            const fypValidation = await validateResourceWithLLM({
+                extractedText: fypTextForValidation,
+                resourceType,
+                title,
+                courseCode,
+                year,
+                instructor,
+                department
+            });
+
+            console.log('[Upload] FYP validation result:', fypValidation);
+
+            if (!fypValidation.valid) {
+                console.warn('[Upload] FYP rejected by LLM — rolling back resource:', resourceId);
+                await supabase.from('resources').delete().eq('id', resourceId);
+                return {
+                    success: false,
+                    error: `Upload rejected: ${fypValidation.reason}`
+                };
+            }
+
+            console.log('[Upload] FYP passed validation');
+
+            // Award points
+            const { data: profileData } = await supabase
+                .from('profiles').select('points').eq('id', session.user.id).single();
+
+            const currentPoints = profileData?.points || 0;
+            const pointsToAdd = uploadPointsMap[resourceType] || 20;
+
+            const { error: pointsError } = await supabase
+                .from('profiles').update({ points: currentPoints + pointsToAdd }).eq('id', session.user.id);
+
+            if (!pointsError) setPoints(currentPoints + pointsToAdd);
+
+            return {
+                success: true,
+                data: resourceData,
+                pointsEarned: pointsToAdd,
+                filesUploaded: files.length,
+                extractionStats: { successful: 1, failed: 0, total: 1, fypVerificationOnly: true }
+            };
+        }
+
+
+        // ── For all other types: upload files + extract text ──────────────────
         const uploadedFiles = [];
         const extractionResults = [];
 
@@ -604,10 +880,7 @@ export const ResourceContextProvider = ({ children }) => {
                 console.log(`Uploading file: ${file.name} (${fileType})`);
 
                 const { error: fileError } = await supabase.storage.from('resources').upload(fileName, file);
-                if (fileError) {
-                    console.error('File upload error:', fileError);
-                    continue;
-                }
+                if (fileError) { console.error('File upload error:', fileError); continue; }
 
                 const { data: { publicUrl: fileUrl } } = supabase.storage.from('resources').getPublicUrl(fileName);
 
@@ -616,27 +889,13 @@ export const ResourceContextProvider = ({ children }) => {
                     .insert({ resource_id: resourceId, file_url: fileUrl, file_type: fileType })
                     .select().single();
 
-                if (fileRefError) {
-                    console.error('File reference error:', fileRefError);
-                    continue;
-                }
+                if (fileRefError) { console.error('File reference error:', fileRefError); continue; }
 
                 uploadedFiles.push(fileUrl);
                 console.log(`File uploaded successfully: ${fileUrl}`);
 
-                // Trigger extraction with retry logic
-                const extractionResult = await triggerExtraction(
-                    fileUrl,
-                    fileType,
-                    resourceId,
-                    fileRef.id
-                );
-                
-                extractionResults.push({
-                    fileUrl,
-                    fileId: fileRef.id,
-                    ...extractionResult
-                });
+                const extractionResult = await triggerExtraction(fileUrl, fileType, resourceId, fileRef.id);
+                extractionResults.push({ fileUrl, fileId: fileRef.id, ...extractionResult });
 
             } catch (error) {
                 console.error('Error processing file:', error);
@@ -645,30 +904,72 @@ export const ResourceContextProvider = ({ children }) => {
 
         console.log('All extractions completed:', extractionResults);
 
-        // Award points
+        // ── Read extracted text from DB (edge function writes there, not to response) ──
+        console.log('[Validation] Reading extracted text from resource_files...');
+        const { data: extractedFiles, error: extractedFilesError } = await supabase
+            .from('resource_files')
+            .select('extracted_text')
+            .eq('resource_id', resourceId)
+            .not('extracted_text', 'is', null)
+            .order('id', { ascending: true })
+            .limit(1);
+
+        const firstExtractedText = extractedFiles?.[0]?.extracted_text?.trim() || '';
+        console.log('[Validation] Extracted text length from DB:', firstExtractedText.length);
+
+        // ── LLM Validation — always required, reject if no text ──────────────
+        if (!firstExtractedText) {
+            console.warn('[Validation] No extracted text in DB — rejecting upload.');
+            await supabase.from('resources').delete().eq('id', resourceId);
+            return {
+                success: false,
+                error: 'We were unable to extract text from your document. Please ensure the file is a readable PDF or clear image and try again.'
+            };
+        }
+
+        console.log('[Validation] Running LLM validation...');
+        const validation = await validateResourceWithLLM({
+            extractedText: firstExtractedText,
+            resourceType,
+            title,
+            courseCode,
+            year,
+            instructor,
+            department
+        });
+
+        console.log('[Validation] Result:', validation);
+
+        if (!validation.valid) {
+            console.warn('[Validation] Rejected — rolling back resource:', resourceId);
+            await supabase.from('resources').delete().eq('id', resourceId);
+            return {
+                success: false,
+                error: `Upload rejected: ${validation.reason}`
+            };
+        }
+
+        console.log('[Validation] ✅ Resource passed validation');
+
+        // ── Award points ──────────────────────────────────────────────────────
         const { data: profileData } = await supabase
-            .from('profiles')
-            .select('points')
-            .eq('id', session.user.id)
-            .single();
+            .from('profiles').select('points').eq('id', session.user.id).single();
 
         const currentPoints = profileData?.points || 0;
         const pointsToAdd = uploadPointsMap[resourceType] || 20;
 
         const { error: pointsError } = await supabase
-            .from('profiles')
-            .update({ points: currentPoints + pointsToAdd })
-            .eq('id', session.user.id);
+            .from('profiles').update({ points: currentPoints + pointsToAdd }).eq('id', session.user.id);
 
         if (!pointsError) setPoints(currentPoints + pointsToAdd);
 
         const successfulExtractions = extractionResults.filter(r => r.success).length;
         const failedExtractions = extractionResults.filter(r => !r.success).length;
 
-        return { 
-            success: true, 
-            data: resourceData, 
-            pointsEarned: pointsToAdd, 
+        return {
+            success: true,
+            data: resourceData,
+            pointsEarned: pointsToAdd,
             filesUploaded: uploadedFiles.length,
             extractionStats: {
                 successful: successfulExtractions,
@@ -680,22 +981,22 @@ export const ResourceContextProvider = ({ children }) => {
     };
 
     const value = {
-        uploadResource, 
-        searchResources, 
-        unlockResource, 
+        uploadResource,
+        searchResources,
+        unlockResource,
         fetchAllResources,
-        fetchQuestions, 
-        postQuestion, 
+        fetchQuestions,
+        postQuestion,
         postAnswer,
-        upvoteAnswer, 
+        upvoteAnswer,
         upvoteQuestion,
-        deleteQuestion, 
+        deleteQuestion,
         deleteAnswer,
-        followUser, 
-        unfollowUser, 
+        followUser,
+        unfollowUser,
         checkIfFollowing,
-        retriggerExtraction,  // NEW: Manual extraction trigger
-        unlockedResources, 
+        retriggerExtraction,
+        unlockedResources,
         loading,
         unlockPointsMap
     };

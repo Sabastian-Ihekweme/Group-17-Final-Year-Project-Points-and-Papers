@@ -10,6 +10,7 @@ function ResourceUpload() {
     const resourceTypes = [
         { resourceType: 'final exam', uploadPoints: 70, unlockPoints: 35 },
         { resourceType: 'midterm exam', uploadPoints: 50, unlockPoints: 25 },
+        { resourceType: 'final year project', uploadPoints: 40, unlockPoints: 20 },
         { resourceType: 'report/essay', uploadPoints: 20, unlockPoints: 15 },
         { resourceType: 'assignment', uploadPoints: 15, unlockPoints: 10 },
         { resourceType: 'lecture note', uploadPoints: 10, unlockPoints: 5 },
@@ -20,6 +21,9 @@ function ResourceUpload() {
         'Computer Science', 'Cyber Security', 'Data Science',
         'Information Technology', 'Information Systems', 'Software Engineering'
     ];
+
+    // Resource types that skip extraction — keep in sync with ResourceContext
+    const SKIP_EXTRACTION_TYPES = ['final year project'];
 
     const { uploadResource } = UseResource();
     const navigate = useNavigate();
@@ -33,6 +37,7 @@ function ResourceUpload() {
     const [description, setDescription] = useState("");
     const [department, setDepartment] = useState("");
     const [loading, setLoading] = useState(false);
+    const [loadingStage, setLoadingStage] = useState(""); // granular progress label
     const [error, setError] = useState("");
     const [popup, setPopup] = useState(null);
     const [formKey, setFormKey] = useState(0);
@@ -65,7 +70,15 @@ function ResourceUpload() {
         setSelectedResourceType(""); setTitle(""); setCourseCode("");
         setYear(""); setInstructor(""); setDescription("");
         setDepartment(""); setFiles([]); setError("");
+        setLoadingStage("");
         setFormKey(prev => prev + 1);
+    };
+
+    const isSkipExtractionType = SKIP_EXTRACTION_TYPES.includes(selectedResourceType);
+
+    const getLoadingLabel = () => {
+        if (loadingStage) return loadingStage;
+        return "Uploading...";
     };
 
     const handleUpload = async (e) => {
@@ -81,8 +94,15 @@ function ResourceUpload() {
         if (files.length === 0) return setError("Please upload at least one file.");
 
         setLoading(true);
+        setLoadingStage("Uploading files...");
 
         try {
+            // Give the user a heads-up that validation is happening for non-FYP types
+            if (!isSkipExtractionType) {
+                // We update the label after a brief delay so users see the transition
+                setTimeout(() => setLoadingStage("Extracting text & verifying document..."), 1500);
+            }
+
             const result = await uploadResource({
                 title: title.trim(), description,
                 courseCode: courseCode.trim(), year: year.trim(),
@@ -96,15 +116,21 @@ function ResourceUpload() {
                 resetForm();
                 setTimeout(() => setPopup(null), 3000);
             } else {
-                setError(result.error === 'Resource already exists'
-                    ? 'A resource with the same details already exists.'
-                    : 'Something went wrong, please try again.');
+                if (result.error === 'Resource already exists') {
+                    setError('A resource with the same details already exists.');
+                } else if (result.error?.startsWith('Upload rejected:')) {
+                    // Validation failure — surface the LLM's specific reason
+                    setError(result.error.replace('Upload rejected: ', ''));
+                } else {
+                    setError('Something went wrong, please try again.');
+                }
             }
         } catch (err) {
             console.error('[ResourceUpload] Unexpected error:', err);
             setError("An error occurred during upload. Please try again.");
         } finally {
             setLoading(false);
+            setLoadingStage("");
         }
     };
 
@@ -142,6 +168,13 @@ function ResourceUpload() {
                             </div>
                         ))}
                     </div>
+
+                    {/* Informational notice for FYP uploads */}
+                    {isSkipExtractionType && (
+                        <div className="fyp-notice">
+                            📄 Final year projects are uploaded without AI text extraction. AI Answer and AI Notes will not be available for this resource type.
+                        </div>
+                    )}
 
                     <h2>Resource Information</h2>
 
@@ -235,10 +268,22 @@ function ResourceUpload() {
                         )}
                     </div>
 
-                    {error && <p className="error-message">{error}</p>}
+                    {error && (
+                        <div className="error-message-box">
+                            <span className="error-icon">⚠️</span>
+                            <p className="error-message">{error}</p>
+                        </div>
+                    )}
+
+                    {/* Loading progress hint for non-FYP uploads */}
+                    {loading && !isSkipExtractionType && (
+                        <p className="upload-progress-hint">
+                            This may take up to 30 seconds while we verify your document.
+                        </p>
+                    )}
 
                     <button className="upload-resource-btn" type="submit" disabled={loading || !isOnline}>
-                        {loading ? "Uploading..." : "Upload Resource"}
+                        {loading ? getLoadingLabel() : "Upload Resource"}
                     </button>
 
                 </form>
