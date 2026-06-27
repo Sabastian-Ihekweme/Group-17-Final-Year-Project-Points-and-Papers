@@ -208,16 +208,6 @@ function ResourceUpload() {
                                 onChange={(e) => setInstructor(e.target.value)} />
                         </div>
 
-                        <div className="resource-info-box">
-                            <label htmlFor="resource-department">Department</label>
-                            <select name="resource-department" className="resource-department"
-                                value={department} onChange={(e) => setDepartment(e.target.value)}>
-                                <option value="">Select a department (optional)</option>
-                                {departments.map(dept => (
-                                    <option key={dept} value={dept}>{dept}</option>
-                                ))}
-                            </select>
-                        </div>
 
                         <div className="resource-info-box">
                             <label htmlFor="resource-description">Description (Optional)</label>
